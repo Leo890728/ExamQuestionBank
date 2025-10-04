@@ -1,0 +1,20 @@
+python-dotenv>=1.1.1
+drf-yasg>=1.21.11
+Django==5.2.7
+djangorestframework>=3.16.1
+django-filter>=25.1
+django-cors-headers>=4.9.0
+django-import-export>=4.3.10
+django-redis>=6.0.0
+celery>=5.5.3
+django-celery-beat>=2.8.1
+django-allauth>=65.11.2
+django-guardian>=3.2.0
+django-reversion>=6.0.0
+django-debug-toolbar>=6.0.0
+sentry-sdk>=2.39.0
+django-modeltranslation>=0.19.17
+django-storages>=1.14
+# MSSQL 驅動與後端
+mssql-django>=1.6
+pyodbc>=5.2.0
