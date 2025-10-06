@@ -1,20 +1,51 @@
-python-dotenv>=1.1.1
-drf-yasg>=1.21.11
+# Core Django
 Django==5.2.7
+python-dotenv>=1.1.1
+
+# Django REST Framework
 djangorestframework>=3.16.1
+djangorestframework-simplejwt>=5.3.1
+drf-yasg>=1.21.11
+
+# Database & ORM
+mssql-django>=1.6
+pyodbc>=5.2.0
+
+# Filtering & Search
 django-filter>=25.1
+
+# CORS & Security
 django-cors-headers>=4.9.0
+
+# Import/Export
 django-import-export>=4.3.10
+openpyxl>=3.1.5
+Pillow>=10.4.0
+
+# Caching & Background Tasks
 django-redis>=6.0.0
 celery>=5.5.3
 django-celery-beat>=2.8.1
+
+# Authentication & Permissions
 django-allauth>=65.11.2
 django-guardian>=3.2.0
+
+# Versioning & Auditing
 django-reversion>=6.0.0
+
+# Development & Debugging
 django-debug-toolbar>=6.0.0
+
+# Monitoring & Error Tracking
 sentry-sdk>=2.39.0
+
+# Internationalization
 django-modeltranslation>=0.19.17
+
+# Storage
 django-storages>=1.14
-# MSSQL 驅動與後端
-mssql-django>=1.6
-pyodbc>=5.2.0
+
+# Utilities
+python-dateutil>=2.9.0
+pytz>=2024.1
