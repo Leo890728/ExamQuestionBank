@@ -37,6 +37,9 @@ urlpatterns = [
     path('api/v1/auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
+   # Question Bank URLs
+    path("api/question_bank/", include("question_bank.urls")),
+
     # App URLs (to be created)
     # path('api/v1/', include('users.urls')),
     # path('api/v1/', include('exams.urls')),
