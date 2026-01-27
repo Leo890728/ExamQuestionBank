@@ -19,6 +19,7 @@
     - [單字卡](#單字卡)
     - [書籤與分析](#書籤與分析)
     - [討論區 MVP](#討論區-mvp)
+    - [使用者管理](#使用者管理)
     - [使用者檔案](#使用者檔案)
   - [函式詳細說明](#函式詳細說明)
     - [題目（函式）](#題目函式)
@@ -58,13 +59,16 @@
       - [函式：public.cast_vote_mvp](#函式publiccast_vote_mvp)
       - [函式：public.claim_daily_credits_mvp](#函式publicclaim_daily_credits_mvp)
       - [函式：public.get_user_credits_mvp](#函式publicget_user_credits_mvp)
+    - [使用者管理（函式）](#使用者管理函式)
+      - [函式：public.get_users_admin](#函式publicget_users_admin)
+      - [函式：public.set_user_admin](#函式publicset_user_admin)
     - [使用者檔案（函式）](#使用者檔案函式)
       - [函式：public.update_user_display_name](#函式publicupdate_user_display_name)
       - [函式：public.get_user_profile](#函式publicget_user_profile)
 
 ## RPC 函式索引
 
-權限圖例：`anon`、`authenticated`、`service_role`。若 migration 未授權，會標示為 `migration 未授權`。
+權限圖例：`anon`、`authenticated`、`service_role`。若 migration 未授權，會標示為 `migration 未授權`。標示為 `admin-only` 的函式會在函式內部檢查管理員權限。
 
 ### 題目
 
@@ -117,10 +121,49 @@
 - `public.claim_daily_credits_mvp(p_user_id uuid) returns json` — `migration 未授權`
 - `public.get_user_credits_mvp(p_user_id uuid) returns json` — `migration 未授權`
 
+### 使用者管理
+
+- `public.get_users_admin() returns table (id uuid, email text, created_at timestamptz, is_admin boolean)` — `authenticated`（admin-only）
+- `public.set_user_admin(p_user_id uuid, p_is_admin boolean) returns void` — `authenticated`（admin-only）
+
 ### 使用者檔案
 
 - `public.update_user_display_name(p_user_id uuid, p_display_name text) returns json` — `migration 未授權`
 - `public.get_user_profile(p_user_id uuid) returns json` — `migration 未授權`
+
+### 使用者管理（函式）
+
+#### 函式：public.get_users_admin — auth: authenticated（admin-only）
+
+回傳 `auth.users` 的使用者清單，供管理頁使用。
+
+### 回傳
+
+| 欄位 | 型別 | 說明 |
+| --- | --- | --- |
+| id | uuid | 使用者 ID。 |
+| email | text | 使用者 Email。 |
+| created_at | timestamptz | 建立時間。 |
+| is_admin | boolean | 由 `raw_user_meta_data.is_admin` 推得。 |
+
+### 備註
+
+- 呼叫者必須具備 `raw_user_meta_data.is_admin = true`。
+
+#### 函式：public.set_user_admin — auth: authenticated（admin-only）
+
+更新 `auth.users.raw_user_meta_data.is_admin`。
+
+### 參數
+
+| 名稱 | 型別 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_user_id | uuid | 是 | 目標使用者 ID。 |
+| p_is_admin | boolean | 是 | `true` 代表設為管理員，`false` 代表移除。 |
+
+### 備註
+
+- 目標使用者需要重新登入，JWT 才會更新。
 ## 函式詳細說明
 
 ### 題目（函式）

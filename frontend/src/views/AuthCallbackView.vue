@@ -18,30 +18,39 @@ const router = useRouter()
 
 onMounted(async () => {
   try {
-    // Check if there's a hash with access_token (OAuth implicit flow)
-    const hashParams = new URLSearchParams(window.location.hash.substring(1))
-    const accessToken = hashParams.get('access_token')
-    
-    if (accessToken) {
-      // Supabase should auto-detect and set session from URL hash
-      // Wait a moment for Supabase to process the hash
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-    
-    // Get the session (Supabase will have parsed the hash by now)
-    const { data, error } = await supabase.auth.getSession()
-    
-    if (error) {
-      console.error('Auth callback error:', error)
-      router.push('/')
-      return
+    const url = new URL(window.location.href)
+    const code = url.searchParams.get('code')
+    let session = null
+
+    if (code) {
+      // PKCE flow (default in supabase-js v2)
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+      if (error) throw error
+      session = data.session
+    } else if (window.location.hash) {
+      // Implicit flow fallback (older providers)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        })
+        if (error) throw error
+        session = data.session
+      }
+    } else {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+      session = data.session
     }
 
-    if (data.session) {
-      console.log('Login successful:', data.session.user.email)
+    if (session) {
+      console.log('Login successful:', session.user.email)
       
       // Store user info for compatibility with existing code
-      const user = data.session.user
+      const user = session.user
       localStorage.setItem('user_id', user.id)
       localStorage.setItem('username', user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
       localStorage.setItem('user_role', user.user_metadata?.is_admin ? 'admin' : 'user')
@@ -51,14 +60,13 @@ onMounted(async () => {
       sessionStorage.removeItem('intended_path')
       
       // Clear the hash from URL
-      if (window.location.hash) {
+      if (window.location.hash || window.location.search) {
         window.history.replaceState(null, '', window.location.pathname)
       }
       
       // Redirect to intended path or practice page
       router.push(intendedPath || '/practice')
     } else {
-      // No session, redirect to home
       console.log('No session found after OAuth callback')
       router.push('/')
     }

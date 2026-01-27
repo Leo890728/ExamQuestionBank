@@ -19,6 +19,7 @@ Trigger helpers (e.g. `handle_updated_at`) are not listed here.
     - [Flashcards](#flashcards)
     - [Bookmarks and analytics](#bookmarks-and-analytics)
     - [Discussion MVP](#discussion-mvp)
+    - [User admin](#user-admin)
     - [User profile](#user-profile)
   - [Function details](#function-details)
     - [Questions functions](#questions-functions)
@@ -58,13 +59,16 @@ Trigger helpers (e.g. `handle_updated_at`) are not listed here.
       - [Function: public.cast_vote_mvp](#function-publiccast_vote_mvp)
       - [Function: public.claim_daily_credits_mvp](#function-publicclaim_daily_credits_mvp)
       - [Function: public.get_user_credits_mvp](#function-publicget_user_credits_mvp)
+    - [User admin functions](#user-admin-functions)
+      - [Function: public.get_users_admin](#function-publicget_users_admin)
+      - [Function: public.set_user_admin](#function-publicset_user_admin)
     - [User profile functions](#user-profile-functions)
       - [Function: public.update_user_display_name](#function-publicupdate_user_display_name)
       - [Function: public.get_user_profile](#function-publicget_user_profile)
 
 ## RPC function index
 
-Permission legend: `anon`, `authenticated`, `service_role`. If a function is not granted in migrations, it is marked as `not granted in migrations`.
+Permission legend: `anon`, `authenticated`, `service_role`. If a function is not granted in migrations, it is marked as `not granted in migrations`. Functions marked `admin-only` enforce an admin check inside the function.
 
 ### Questions
 
@@ -117,10 +121,49 @@ Permission legend: `anon`, `authenticated`, `service_role`. If a function is not
 - `public.claim_daily_credits_mvp(p_user_id uuid) returns json` — `not granted in migrations`
 - `public.get_user_credits_mvp(p_user_id uuid) returns json` — `not granted in migrations`
 
+### User admin
+
+- `public.get_users_admin() returns table (id uuid, email text, created_at timestamptz, is_admin boolean)` — `authenticated` (admin-only)
+- `public.set_user_admin(p_user_id uuid, p_is_admin boolean) returns void` — `authenticated` (admin-only)
+
 ### User profile
 
 - `public.update_user_display_name(p_user_id uuid, p_display_name text) returns json` — `not granted in migrations`
 - `public.get_user_profile(p_user_id uuid) returns json` — `not granted in migrations`
+
+### User admin functions
+
+#### Function: public.get_users_admin — auth: authenticated (admin-only)
+
+Returns a list of users from `auth.users` with basic fields for admin UI.
+
+### Returns
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| id | uuid | User ID. |
+| email | text | Email address. |
+| created_at | timestamptz | Created time. |
+| is_admin | boolean | Derived from `raw_user_meta_data.is_admin`. |
+
+### Notes
+
+- Requires the caller to have `raw_user_meta_data.is_admin = true`.
+
+#### Function: public.set_user_admin — auth: authenticated (admin-only)
+
+Updates `auth.users.raw_user_meta_data.is_admin` for the target user.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_user_id | uuid | yes | Target user ID. |
+| p_is_admin | boolean | yes | `true` to grant admin, `false` to revoke. |
+
+### Notes
+
+- The target user must re-login to receive updated JWT claims.
 ## Function details
 
 ### Questions functions

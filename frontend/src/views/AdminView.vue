@@ -1,13 +1,13 @@
-<template>
+﻿<template>
   <div class="admin-view">
     <div class="container">
       <div class="admin-header">
         <div class="header-top">
           <div class="header-title-section">
-            <h2 class="section-title">題庫管理後台</h2>
-            <p class="section-subtitle">管理考卷與題目資料</p>
+            <h2 class="section-title">管理員後台</h2>
+            <p class="section-subtitle">管理測驗、題目、標籤與使用者</p>
           </div>
-          <div class="admin-actions">
+                    <div class="admin-actions">
             <template v-if="currentTab === 'exams'">
               <button class="action-btn action-btn-secondary" @click="batchImport">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -16,7 +16,7 @@
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                <span>匯入考卷</span>
+                <span>批次匯入測驗</span>
               </button>
               <button class="action-btn action-btn-primary" @click="addExam">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -24,7 +24,7 @@
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                <span>新增考卷</span>
+                <span>新增測驗</span>
               </button>
             </template>
             <template v-else-if="currentTab === 'questions'">
@@ -56,16 +56,21 @@
                 <span>新增標籤</span>
               </button>
             </template>
+            <template v-else-if="currentTab === 'users'">
+              <button class="action-btn action-btn-secondary" @click="refreshUsers">
+                重新整理
+              </button>
+            </template>
           </div>
         </div>
-        <div class="admin-tabs">
+                <div class="admin-tabs">
           <button :class="['tab-btn', { active: currentTab === 'exams' }]" @click="setTab('exams')">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
             </svg>
-            <span>考卷管理</span>
+            <span>測驗管理</span>
           </button>
           <button :class="['tab-btn', { active: currentTab === 'questions' }]" @click="setTab('questions')">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -84,6 +89,14 @@
             </svg>
             <span>標籤管理</span>
           </button>
+          <button :class="['tab-btn', { active: currentTab === 'users' }]" @click="setTab('users')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>使用者</span>
+          </button>
         </div>
       </div>
 
@@ -99,20 +112,25 @@
       <div v-else-if="currentTab === 'tags'">
         <AdminTagManagement ref="adminTagManagementRef" />
       </div>
+
+      <div v-else-if="currentTab === 'users'">
+        <AdminUserManagement ref="adminUserManagementRef" />
+      </div>
     </div>
-  </div>
-</template>
+  </div></template>
 
 <script setup>
 import { ref } from 'vue'
 import AdminQuestionManagement from '@/components/AdminQuestionManagement.vue'
 import AdminExamManagement from '@/components/AdminExamManagement.vue'
 import AdminTagManagement from '@/components/AdminTagManagement.vue'
+import AdminUserManagement from '@/components/AdminUserManagement.vue'
 
 const currentTab = ref('exams')
 const adminExamManagementRef = ref(null)
 const adminQuestionManagementRef = ref(null)
 const adminTagManagementRef = ref(null)
+const adminUserManagementRef = ref(null)
 
 const setTab = (tab) => {
   currentTab.value = tab
@@ -147,6 +165,12 @@ const importQuestions = () => {
 const addTag = () => {
   if (adminTagManagementRef.value && adminTagManagementRef.value.openAddModal) {
     adminTagManagementRef.value.openAddModal()
+  }
+}
+
+const refreshUsers = () => {
+  if (adminUserManagementRef.value && adminUserManagementRef.value.loadUsers) {
+    adminUserManagementRef.value.loadUsers()
   }
 }
 </script>
@@ -371,3 +395,21 @@ const addTag = () => {
     color: var(--text-primary) !important;
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
