@@ -539,7 +539,7 @@ nav.desktop-nav {
   padding: 0;
   position: sticky;
   top: 0;
-  z-index: 2000; /* Stay above all content */
+  z-index: 120; /* Stay above content but below modals */
   opacity: 1 !important; /* Explicit opacity */
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;

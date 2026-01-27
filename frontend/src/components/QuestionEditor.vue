@@ -34,32 +34,69 @@
                 <line x1="3" y1="12" x2="3.01" y2="12"></line>
                 <line x1="3" y1="18" x2="3.01" y2="18"></line>
               </svg>
-              <span>題型分類 <span class="required">*</span></span>
+              <span>題型分類</span>
             </label>
             <input
               id="category"
               v-model="formData.category"
               type="text"
-              required
               placeholder="例：選擇題、申論題、綜合題型..."
               class="form-input"
             />
           </div>
 
+          <!-- 年份與來源 -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="year" class="form-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>年份</span>
+              </label>
+              <input
+                id="year"
+                v-model.number="formData.year"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="例：2024"
+                class="form-input"
+              />
+            </div>
+            <div class="form-group">
+              <label for="source" class="form-label">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 1 0-7l1-1a5 5 0 0 1 7 7l-1 1"></path>
+                  <path d="M14 11a5 5 0 0 1 0 7l-1 1a5 5 0 0 1-7-7l1-1"></path>
+                </svg>
+                <span>來源</span>
+              </label>
+              <input
+                id="source"
+                v-model="formData.source"
+                type="text"
+                placeholder="例：考古題、教科書..."
+                class="form-input"
+              />
+            </div>
+          </div>
+
           <!-- 題型 -->
           <div class="form-group">
-            <label for="question_type" class="form-label">
+            <label for="type" class="form-label">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 11 12 14 22 4"></polyline>
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
               </svg>
               <span>題型</span>
             </label>
-            <select id="question_type" v-model="formData.question_type" class="form-select">
-              <option value="選擇題">選擇題</option>
-              <option value="多選題">多選題</option>
-              <option value="是非題">是非題</option>
-              <option value="申論題">申論題</option>
+            <select id="type" v-model="formData.type" class="form-select">
+              <option value="multipleChoice">選擇題</option>
+              <option value="essay">申論題</option>
             </select>
           </div>
 
@@ -73,8 +110,9 @@
             </label>
             <select id="difficulty" v-model="formData.difficulty" class="form-select">
               <option value="easy">容易</option>
-              <option value="medium">中等</option>
+              <option value="normal">普通</option>
               <option value="hard">困難</option>
+              <option value="insane">極難</option>
             </select>
           </div>
   
@@ -119,21 +157,6 @@
             ></textarea>
           </div>
   
-          <!-- 狀態 -->
-          <div class="form-group">
-            <label for="status" class="form-label">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-              <span>狀態</span>
-            </label>
-            <select id="status" v-model="formData.status" class="form-select">
-              <option value="draft">草稿</option>
-              <option value="published">已發布</option>
-            </select>
-          </div>
-
           <!-- 標籤 (Multiselect) -->
           <div class="form-group">
             <label for="tags" class="form-label">
@@ -316,11 +339,12 @@ const emit = defineEmits(['save', 'save-exam-settings', 'save-direct', 'save-pen
 const formData = ref({
   subject: '',
   category: '',
-  question_type: '選擇題',
-  difficulty: 'medium',
+  year: null,
+  source: '',
+  type: 'multipleChoice',
+  difficulty: 'normal',
   content: '',
   explanation: '',
-  status: 'draft',
   options: [],
   tag_ids: []
 })
@@ -334,17 +358,37 @@ const examSettings = ref({
 const tagOptions = ref([])
 const selectedTags = ref([])
 
+const normalizeType = (value) => {
+  if (value === 'multipleChoice' || value === 'essay') return value
+  if (value === '選擇題' || value === '多選題' || value === '是非題') return 'multipleChoice'
+  if (value === '申論題') return 'essay'
+  return 'multipleChoice'
+}
+
+const normalizeDifficulty = (value) => {
+  if (value === 'medium') return 'normal'
+  if (value === 'easy' || value === 'normal' || value === 'hard' || value === 'insane') return value
+  return 'normal'
+}
+
+const normalizeYear = (value) => {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 // 監聽 question prop 的變化
 watch(() => props.question, (newQuestion) => {
   if (newQuestion) {
     formData.value = {
       subject: newQuestion.subject || '',
       category: newQuestion.category || '',
-      question_type: newQuestion.question_type || '選擇題',
-      difficulty: newQuestion.difficulty || 'medium',
+      year: normalizeYear(newQuestion.year),
+      source: newQuestion.source || '',
+      type: normalizeType(newQuestion.type ?? newQuestion.question_type),
+      difficulty: normalizeDifficulty(newQuestion.difficulty),
       content: newQuestion.content || '',
       explanation: newQuestion.explanation || '',
-      status: newQuestion.status || 'draft',
       options: newQuestion.options ? [...newQuestion.options] : [],
       tag_ids: newQuestion.tag_ids ? newQuestion.tag_ids : (newQuestion.tags ? newQuestion.tags.map(t => t.id) : [])
     }
@@ -407,6 +451,9 @@ const getQuestionPayload = () => {
 
   return {
     ...formData.value,
+    type: normalizeType(formData.value.type),
+    difficulty: normalizeDifficulty(formData.value.difficulty),
+    year: normalizeYear(formData.value.year),
     content: formData.value.content?.toString().trim()
   }
 }
@@ -896,6 +943,88 @@ form {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+/* Dark Mode */
+.dark .editor-card {
+  background: var(--surface, #1E293B);
+  border-color: var(--border, #334155);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.dark .form-label {
+  color: var(--text-primary, #F1F5F9);
+}
+
+.dark .form-input,
+.dark .form-select,
+.dark .form-textarea {
+  background: var(--surface-muted, #334155);
+  border-color: var(--border, #334155);
+  color: var(--text-primary, #F1F5F9);
+}
+
+.dark .form-input:focus,
+.dark .form-select:focus,
+.dark .form-textarea:focus {
+  border-color: var(--primary, #60A5FA);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.dark .form-actions {
+  border-top-color: var(--border, #334155);
+}
+
+.dark .options-section,
+.dark .exam-settings {
+  background: var(--surface, #1E293B);
+  border-color: var(--border, #334155);
+}
+
+.dark .option-item {
+  background: var(--surface-muted, #334155);
+}
+
+.dark .option-item:hover {
+  background: var(--surface, #1E293B);
+}
+
+.dark .option-input {
+  background: var(--surface, #1E293B);
+  border-color: var(--border, #334155);
+  color: var(--text-primary, #F1F5F9);
+}
+
+.dark .checkbox-label {
+  background: var(--surface, #1E293B);
+  border-color: var(--border, #334155);
+  color: var(--text-secondary, #94A3B8);
+}
+
+.dark .btn-add-option {
+  background: var(--surface, #1E293B);
+  border-color: var(--border, #334155);
+  color: var(--primary, #60A5FA);
+}
+
+.dark .btn-add-option:hover {
+  background: var(--surface-muted, #334155);
+}
+
+.dark .settings-header h4 {
+  color: var(--text-primary, #F1F5F9);
+}
+
+.dark .form-body::-webkit-scrollbar-track {
+  background: var(--surface-muted, #334155);
+}
+
+.dark .form-body::-webkit-scrollbar-thumb {
+  background: var(--border, #475569);
+}
+
+.dark .form-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #94A3B8);
 }
 
 /* Responsive Design */

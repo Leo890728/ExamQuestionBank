@@ -4,6 +4,84 @@
  */
 import { supabase } from '@/lib/supabase'
 
+const normalizeType = (value, options = []) => {
+  if (value === 'multipleChoice' || value === 'essay') return value
+  if (value === '選擇題' || value === '多選題' || value === '是非題') return 'multipleChoice'
+  if (value === '申論題') return 'essay'
+  if (options && options.length > 0) return 'multipleChoice'
+  return 'essay'
+}
+
+const normalizeDifficulty = (value) => {
+  if (value === 'medium') return 'normal'
+  if (value === 'easy' || value === 'normal' || value === 'hard' || value === 'insane') return value
+  return 'normal'
+}
+
+const normalizeYear = (value) => {
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const normalizeText = (value) => {
+  if (value === null || value === undefined) return null
+  const text = value.toString().trim()
+  return text.length ? text : null
+}
+
+const normalizeOptions = (options) => {
+  if (!Array.isArray(options)) return []
+  return options
+    .map((option, index) => ({
+      content: option?.content?.toString().trim() || '',
+      is_correct: Boolean(option?.is_correct),
+      order: Number.isFinite(option?.order) ? option.order : index + 1
+    }))
+    .filter(option => option.content.length > 0)
+}
+
+const buildAddQuestionPayload = (questionData) => {
+  const options = normalizeOptions(questionData?.options)
+  return {
+    content: normalizeText(questionData?.content),
+    explanation: normalizeText(questionData?.explanation),
+    question_type: normalizeType(questionData?.type ?? questionData?.question_type, options),
+    difficulty: normalizeDifficulty(questionData?.difficulty),
+    subject: normalizeText(questionData?.subject),
+    category: normalizeText(questionData?.category),
+    year: normalizeYear(questionData?.year),
+    source: normalizeText(questionData?.source),
+    options,
+    tag_ids: Array.isArray(questionData?.tag_ids)
+      ? questionData.tag_ids
+      : Array.isArray(questionData?.tags)
+        ? questionData.tags.map(tag => tag.id)
+        : null
+  }
+}
+
+const buildUpdateQuestionPayload = (questionId, questionData) => {
+  const options = normalizeOptions(questionData?.options)
+  return {
+    p_id: Number(questionId),
+    p_content: normalizeText(questionData?.content),
+    p_explanation: normalizeText(questionData?.explanation),
+    p_question_type: normalizeType(questionData?.type ?? questionData?.question_type, options),
+    p_difficulty: normalizeDifficulty(questionData?.difficulty),
+    p_subject: normalizeText(questionData?.subject),
+    p_category: normalizeText(questionData?.category),
+    p_year: normalizeYear(questionData?.year),
+    p_source: normalizeText(questionData?.source),
+    p_options: options,
+    p_tag_ids: Array.isArray(questionData?.tag_ids)
+      ? questionData.tag_ids
+      : Array.isArray(questionData?.tags)
+        ? questionData.tags.map(tag => tag.id)
+        : null
+  }
+}
+
 const questionService = {
   // Get questions with filters
   async getQuestions(params = {}) {
@@ -60,30 +138,27 @@ const questionService = {
 
   // Update a question (admin only)
   async updateQuestion(questionId, questionData) {
-    const { data, error } = await supabase.from('question')
-      .update(questionData)
-      .eq('id', questionId)
-      .select()
-      .single()
+    const updatePayload = buildUpdateQuestionPayload(questionId, questionData)
+    const { data, error } = await supabase.rpc('update_question', updatePayload)
     if (error) throw new Error(error.message)
     return { data }
   },
 
   // Create a new question (admin only)
   async createQuestion(questionData) {
-    const { data, error } = await supabase.from('question')
-      .insert(questionData)
-      .select()
-      .single()
+    const payload = buildAddQuestionPayload(questionData)
+    const { data, error } = await supabase.rpc('add_question', payload)
     if (error) throw new Error(error.message)
-    return { data }
+    return { data: { id: data } }
   },
 
   // Delete a question (admin only)
   async deleteQuestion(questionId) {
-    const { error } = await supabase.from('question').delete().eq('id', questionId)
+    const { data, error } = await supabase.rpc('delete_question', {
+      p_id: Number(questionId)
+    })
     if (error) throw new Error(error.message)
-    return { success: true }
+    return { data }
   },
 
   // Get question options
@@ -94,11 +169,18 @@ const questionService = {
 
   // Bulk create questions (admin only)
   async bulkCreateQuestions(questions) {
-    const { data, error } = await supabase.from('question')
-      .insert(questions)
-      .select()
-    if (error) throw new Error(error.message)
-    return { data }
+    const results = []
+    for (let i = 0; i < questions.length; i += 1) {
+      try {
+        const payload = buildAddQuestionPayload(questions[i])
+        const { data, error } = await supabase.rpc('add_question', payload)
+        if (error) throw error
+        results.push({ success: true, id: data, index: i })
+      } catch (error) {
+        results.push({ success: false, errors: error.message || error, index: i })
+      }
+    }
+    return { data: results }
   },
 
   // Get next question (random from pool)
