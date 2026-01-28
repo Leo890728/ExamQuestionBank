@@ -100,53 +100,45 @@
         </div>
       </div>
 
-      <!-- Main Content: exams or questions -->
-      <div v-if="currentTab === 'exams'">
-        <AdminExamManagement ref="adminExamManagementRef" />
-      </div>
-
-      <div v-else-if="currentTab === 'questions'">
-        <AdminQuestionManagement ref="adminQuestionManagementRef" />
-      </div>
-
-      <div v-else-if="currentTab === 'tags'">
-        <AdminTagManagement ref="adminTagManagementRef" />
-      </div>
-
-      <div v-else-if="currentTab === 'users'">
-        <AdminUserManagement ref="adminUserManagementRef" />
-      </div>
+      <!-- Main Content: route-based -->
+      <router-view v-slot="{ Component }">
+        <component :is="Component" ref="adminContentRef" />
+      </router-view>
     </div>
   </div></template>
 
 <script setup>
-import { ref } from 'vue'
-import AdminQuestionManagement from '@/components/AdminQuestionManagement.vue'
-import AdminExamManagement from '@/components/AdminExamManagement.vue'
-import AdminTagManagement from '@/components/AdminTagManagement.vue'
-import AdminUserManagement from '@/components/AdminUserManagement.vue'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const currentTab = ref('exams')
-const adminExamManagementRef = ref(null)
-const adminQuestionManagementRef = ref(null)
-const adminTagManagementRef = ref(null)
-const adminUserManagementRef = ref(null)
+const route = useRoute()
+const router = useRouter()
+const adminContentRef = ref(null)
+
+const currentTab = computed(() => {
+  const segment = route.path.split('/')[2]
+  return segment || 'exams'
+})
 
 const setTab = (tab) => {
-  currentTab.value = tab
+  if (tab === currentTab.value) return
+  router.push(`/admin/${tab}`)
+}
+
+const callActive = (method) => {
+  const target = adminContentRef.value
+  if (target && typeof target[method] === 'function') {
+    target[method]()
+  }
 }
 
 // Exam management functions
 const addExam = () => {
-  if (adminExamManagementRef.value) {
-    adminExamManagementRef.value.addExam()
-  }
+  callActive('addExam')
 }
 
 const batchImport = () => {
-  if (adminExamManagementRef.value) {
-    adminExamManagementRef.value.batchImport()
-  }
+  callActive('batchImport')
 }
 
 // Question management functions
@@ -156,22 +148,16 @@ const addQuestion = () => {
 }
 
 const importQuestions = () => {
-  if (adminQuestionManagementRef.value && adminQuestionManagementRef.value.showImportModal) {
-    adminQuestionManagementRef.value.showImportModal()
-  }
+  callActive('showImportModal')
 }
 
 // Tag management functions
 const addTag = () => {
-  if (adminTagManagementRef.value && adminTagManagementRef.value.openAddModal) {
-    adminTagManagementRef.value.openAddModal()
-  }
+  callActive('openAddModal')
 }
 
 const refreshUsers = () => {
-  if (adminUserManagementRef.value && adminUserManagementRef.value.loadUsers) {
-    adminUserManagementRef.value.loadUsers()
-  }
+  callActive('loadUsers')
 }
 </script>
 

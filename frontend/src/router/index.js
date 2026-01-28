@@ -28,7 +28,14 @@ const router = createRouter({
       path: '/admin',
       name: 'Admin',
       component: () => import('@/views/AdminView.vue'),
-      meta: { requiresAdmin: true }
+      meta: { requiresAdmin: true },
+      children: [
+        { path: '', redirect: '/admin/exams' },
+        { path: 'exams', component: () => import('@/components/AdminExamManagement.vue') },
+        { path: 'questions', component: () => import('@/components/AdminQuestionManagement.vue') },
+        { path: 'tags', component: () => import('@/components/AdminTagManagement.vue') },
+        { path: 'users', component: () => import('@/components/AdminUserManagement.vue') }
+      ]
     },
     {
       path: '/admin/exams/new',
