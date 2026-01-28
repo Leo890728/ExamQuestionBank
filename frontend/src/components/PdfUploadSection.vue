@@ -1,7 +1,7 @@
 <template>
   <div class="pdf-upload-container">
     <!-- 標題區 -->
-    <div class="upload-header">
+    <div v-if="showHeader" class="upload-header">
       <div class="header-content">
         <div class="icon-wrapper">
           <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -110,7 +110,7 @@
     </div>
 
     <!-- 匯入結果 -->
-    <div v-if="importResult" class="result-container">
+    <div v-if="importResult && showResult" class="result-container">
       <div class="result-header">
         <span class="result-title">✓ 解析完成</span>
         <button class="close-btn" @click="clearResult">×</button>
@@ -139,7 +139,14 @@
             <span :class="{ rotated: showPreview }">▼</span>
           </div>
           <div v-if="showPreview" class="preview-list">
-            <div v-for="(q, i) in importResult.questions.slice(0, 5)" :key="i" class="preview-item">
+            <div
+              v-for="(q, i) in importResult.questions.slice(0, 5)"
+              :key="i"
+              :class="[
+                'preview-item',
+                { 'is-first': i === 0, 'is-last': i === importResult.questions.slice(0, 5).length - 1 }
+              ]"
+            >
               <span class="q-num">{{ i + 1 }}</span>
               <span class="q-text">{{ q.question?.substring(0, 100) }}...</span>
             </div>
@@ -161,6 +168,12 @@
       <span>{{ errorMessage }}</span>
       <button @click="errorMessage = ''">×</button>
     </div>
+
+    <!-- 警告訊息 -->
+    <div v-if="warningMessage" class="warning-toast">
+      <span>{{ warningMessage }}</span>
+      <button @click="warningMessage = ''">×</button>
+    </div>
   </div>
 </template>
 
@@ -168,7 +181,12 @@
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 
-const emit = defineEmits(['import-success'])
+const { showResult, showHeader } = defineProps({
+  showResult: { type: Boolean, default: true },
+  showHeader: { type: Boolean, default: true }
+})
+
+const emit = defineEmits(['import-success', 'preview-ready', 'error'])
 
 const questionFileInputEl = ref(null)
 const answerFileInputEl = ref(null)
@@ -194,10 +212,40 @@ const uploadingAnswers = ref(false)
 const importResult = ref(null)
 const answersData = ref(null)
 const errorMessage = ref('')
+const warningMessage = ref('')
 
 const isDraggingQuestion = ref(false)
 const isDraggingAnswer = ref(false)
 const showPreview = ref(false)
+
+const buildPreviewPayload = () => {
+  if (!importResult.value) return null
+  return {
+    source: 'pdf',
+    examData: {
+      name: `${importResult.value.subject || ''} ${importResult.value.category || ''}`.trim(),
+      subject: importResult.value.subject,
+      category: importResult.value.category,
+      level: importResult.value.level,
+      time_length: importResult.value.time_length
+    },
+    questions: importResult.value.questions || [],
+    answers: answersData.value
+  }
+}
+
+const emitPreviewIfReady = () => {
+  const payload = buildPreviewPayload()
+  if (payload) {
+    emit('preview-ready', payload)
+  }
+}
+
+const emitError = (message) => {
+  if (message) {
+    emit('error', message)
+  }
+}
 
 // 處理考卷 PDF 上傳
 const handleQuestionPdfUpload = async (event) => {
@@ -212,7 +260,9 @@ const handleQuestionDrop = async (event) => {
   isDraggingQuestion.value = false
   const file = event.dataTransfer.files[0]
   if (!file?.name.toLowerCase().endsWith('.pdf')) {
-    errorMessage.value = '請上傳 PDF 檔案'
+    const message = '請上傳 PDF 檔案'
+    errorMessage.value = message
+    emitError(message)
     return
   }
   await uploadQuestionFile(file)
@@ -223,6 +273,7 @@ const uploadQuestionFile = async (file) => {
   questionFileName.value = file.name
   uploadingQuestions.value = true
   errorMessage.value = ''
+  warningMessage.value = ''
 
   try {
     // 使用 FormData 直接傳送檔案 - 記憶體處理，不儲存
@@ -239,20 +290,51 @@ const uploadQuestionFile = async (file) => {
       throw new Error(error.message || '解析失敗')
     }
 
+    const parsedQuestions = functionData?.questions || []
+    if (!parsedQuestions.length) {
+      const message = '解析失敗：未找到題目'
+      errorMessage.value = message
+      emitError(message)
+      importResult.value = null
+      questionFileName.value = ''
+      showPreview.value = false
+      return
+    }
+
     importResult.value = functionData
     showPreview.value = true
     console.log('考卷 PDF 解析成功:', functionData)
+    emitPreviewIfReady()
   } catch (error) {
     console.error('考卷 PDF 上傳失敗:', error)
     errorMessage.value = error.message || '考卷 PDF 上傳失敗'
     questionFileName.value = ''
+    emitError(errorMessage.value)
   } finally {
     uploadingQuestions.value = false
   }
 }
 
+const reset = () => {
+  importResult.value = null
+  answersData.value = null
+  questionFileName.value = ''
+  answerFileName.value = ''
+  errorMessage.value = ''
+  warningMessage.value = ''
+  showPreview.value = false
+  uploadingQuestions.value = false
+  uploadingAnswers.value = false
+  if (questionFileInputEl.value) {
+    questionFileInputEl.value.value = ''
+  }
+  if (answerFileInputEl.value) {
+    answerFileInputEl.value.value = ''
+  }
+}
+
 // Expose for programmatic access
-defineExpose({ openQuestionPicker })
+defineExpose({ openQuestionPicker, reset })
 
 // 處理答案 PDF 上傳
 const handleAnswerPdfUpload = async (event) => {
@@ -266,7 +348,9 @@ const handleAnswerDrop = async (event) => {
   isDraggingAnswer.value = false
   const file = event.dataTransfer.files[0]
   if (!file?.name.toLowerCase().endsWith('.pdf')) {
-    errorMessage.value = '請上傳 PDF 檔案'
+    const message = '請上傳 PDF 檔案'
+    errorMessage.value = message
+    emitError(message)
     return
   }
   await uploadAnswerFile(file)
@@ -276,6 +360,7 @@ const uploadAnswerFile = async (file) => {
   answerFileName.value = file.name
   uploadingAnswers.value = true
   errorMessage.value = ''
+  warningMessage.value = ''
 
   try {
     const formData = new FormData()
@@ -292,6 +377,16 @@ const uploadAnswerFile = async (file) => {
     }
 
     answersData.value = functionData
+
+    const parsedAnswers = answersData.value?.answers || []
+    if (!parsedAnswers.length) {
+      const message = '解析失敗：未找到答案'
+      errorMessage.value = message
+      emitError(message)
+      answersData.value = null
+      answerFileName.value = ''
+      return
+    }
     
     // 合併答案到題目
     if (importResult.value?.questions && answersData.value?.answers) {
@@ -301,10 +396,20 @@ const uploadAnswerFile = async (file) => {
         }
       })
     }
+
+    if (importResult.value?.questions) {
+      const questionCount = importResult.value.questions.length
+      const answerCount = parsedAnswers.length
+      if (questionCount !== answerCount) {
+        warningMessage.value = `警告：答案數量 (${answerCount}) 與題目數量 (${questionCount}) 不一致`
+      }
+    }
+    emitPreviewIfReady()
   } catch (error) {
     console.error('答案 PDF 上傳失敗:', error)
     errorMessage.value = error.message || '答案 PDF 上傳失敗'
     answerFileName.value = ''
+    emitError(errorMessage.value)
   } finally {
     uploadingAnswers.value = false
   }
@@ -333,6 +438,7 @@ const clearResult = () => {
   questionFileName.value = ''
   answerFileName.value = ''
   errorMessage.value = ''
+  warningMessage.value = ''
   showPreview.value = false
 }
 </script>
@@ -372,6 +478,7 @@ const clearResult = () => {
   background: var(--bg-tertiary, #f9fafb);
   border-radius: 8px;
   border: 2px dashed var(--border, #e5e7eb);
+  overflow: hidden;
 }
 
 .card-header-custom {
@@ -379,6 +486,8 @@ const clearResult = () => {
   padding: 0.75rem 1rem;
   background: var(--bg-secondary, #fff);
   border-bottom: 1px solid var(--border);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
 }
 .card-icon {
   width: 28px; height: 28px;
@@ -420,6 +529,7 @@ const clearResult = () => {
   border: 1px solid #d1fae5;
   border-radius: 8px;
   background: #f0fdf4;
+  overflow: hidden;
 }
 .result-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -428,7 +538,11 @@ const clearResult = () => {
 }
 .result-title { font-weight: 600; color: #065f46; }
 .close-btn { border: none; background: none; font-size: 1.25rem; cursor: pointer; }
-.result-body { padding: 1rem; }
+.result-body {
+  padding: 1rem;
+  height: 360px;
+  overflow: auto;
+}
 
 .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
 .info-item { padding: 0.75rem; background: #fff; border-radius: 6px; }
@@ -446,8 +560,26 @@ const clearResult = () => {
   font-size: 0.875rem;
 }
 .preview-header .rotated { transform: rotate(180deg); }
-.preview-list { padding: 0.75rem 0; }
-.preview-item { display: flex; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb; }
+.preview-list {
+  padding: 0.75rem 0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+.preview-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.preview-item.is-first {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+.preview-item.is-last {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border-bottom: none;
+}
 .q-num {
   width: 24px; height: 24px;
   background: var(--primary); color: #fff;
@@ -476,6 +608,16 @@ const clearResult = () => {
 }
 .error-toast button { border: none; background: none; cursor: pointer; font-size: 1.25rem; }
 
+.warning-toast {
+  position: fixed; bottom: 1rem; right: 1rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 6px; color: #92400e;
+  transform: translateY(-60px);
+}
+.warning-toast button { border: none; background: none; cursor: pointer; font-size: 1.25rem; }
+
 /* Dark Mode Styles */
 :root[data-theme="dark"] .pdf-upload-container,
 .dark .pdf-upload-container {
@@ -497,6 +639,12 @@ const clearResult = () => {
 :root[data-theme="dark"] .card-header-custom h6,
 .dark .card-header-custom h6 {
   color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .card-header-custom,
+.dark .card-header-custom {
+  background: var(--bg-secondary, #1e293b);
+  border-bottom: 1px solid var(--border-dark, #334155);
 }
 
 :root[data-theme="dark"] .dropzone,
@@ -547,6 +695,11 @@ const clearResult = () => {
   border-color: var(--border-dark, #475569);
 }
 
+:root[data-theme="dark"] .preview-list,
+.dark .preview-list {
+  background: var(--bg-primary, #0f172a);
+}
+
 :root[data-theme="dark"] .q-text,
 .dark .q-text {
   color: var(--text-primary-dark, #f1f5f9);
@@ -556,6 +709,56 @@ const clearResult = () => {
 .dark .btn-cancel {
   background: var(--bg-tertiary, #334155);
   color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .result-container,
+.dark .result-container {
+  background: #0f172a;
+  border-color: #1f4d3a;
+}
+
+:root[data-theme="dark"] .result-header,
+.dark .result-header {
+  border-bottom-color: #1f4d3a;
+}
+
+:root[data-theme="dark"] .result-title,
+.dark .result-title {
+  color: #d1fae5;
+}
+
+:root[data-theme="dark"] .close-btn,
+.dark .close-btn {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .info-item.highlight,
+.dark .info-item.highlight {
+  background: #3f2d0e;
+}
+
+:root[data-theme="dark"] .error-toast,
+.dark .error-toast {
+  background: #2b1515;
+  border-color: #7f1d1d;
+  color: #fecaca;
+}
+
+:root[data-theme="dark"] .error-toast button,
+.dark .error-toast button {
+  color: inherit;
+}
+
+:root[data-theme="dark"] .warning-toast,
+.dark .warning-toast {
+  background: #2a1d0b;
+  border-color: #92400e;
+  color: #fcd34d;
+}
+
+:root[data-theme="dark"] .warning-toast button,
+.dark .warning-toast button {
+  color: inherit;
 }
 
 :root[data-theme="dark"] .result-header,

@@ -439,91 +439,164 @@
             </button>
           </div>
           <div class="modal-body modern-modal-body">
-            <div class="import-options">
-              <div class="import-option" @click="selectImportType('json')">
-                <div class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+            <div class="import-steps">
+              <button type="button" class="step-item" :class="{ active: importStep >= 1, current: importStep === 1 }"
+                @click="goToImportStep(1)">
+                <span class="step-index">1</span>
+                <span class="step-label">選擇方式</span>
+              </button>
+              <div class="step-divider"></div>
+              <button type="button" class="step-item" :class="{ active: importStep >= 2, current: importStep === 2 }"
+                :disabled="importStep < 2" @click="goToImportStep(2)">
+                <span class="step-index">2</span>
+                <span class="step-label">上傳檔案</span>
+              </button>
+              <div class="step-divider"></div>
+              <button type="button" class="step-item" :class="{ active: importStep >= 3, current: importStep === 3 }"
+                :disabled="importStep < 3" @click="goToImportStep(3)">
+                <span class="step-index">3</span>
+                <span class="step-label">匯入結果</span>
+              </button>
+            </div>
+
+            <!-- Step 1: Choose type -->
+            <div v-if="importStep === 1" class="import-step">
+              <div class="import-options">
+                <div class="import-option" @click="selectImportType('json')">
+                  <div class="option-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                      <polyline points="13 2 13 9 20 9"></polyline>
+                    </svg>
+                  </div>
+                  <div class="option-content">
+                    <h6 class="option-title">JSON 檔案</h6>
+                    <p class="option-description">匯入結構化的 JSON 格式題目檔案</p>
+                    <div class="option-hint">建議格式: .json</div>
+                  </div>
+                  <div class="option-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="import-option" @click="selectImportType('pdf')">
+                  <div class="option-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                  </div>
+                  <div class="option-content">
+                    <h6 class="option-title">PDF 檔案</h6>
+                    <p class="option-description">適合由考題 PDF 自動解析</p>
+                    <div class="option-hint">建議格式: .pdf</div>
+                  </div>
+                  <div class="option-arrow">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Upload -->
+            <div v-else-if="importStep === 2" class="import-step">
+              <div class="import-step-header">
+                <div class="step-title">上傳 {{ importTypeLabel }} 檔案</div>
+                <button type="button" class="link-btn" @click="goToImportStep(1)">更換匯入方式</button>
+              </div>
+
+              <!-- JSON Import Section -->
+              <div v-if="importType === 'json'" class="import-section">
+                <div class="upload-zone" @click="$refs.jsonFileInput.click()" @dragover.prevent
+                  @drop.prevent="handleJsonDrop">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  <p class="upload-text">點擊或拖曳檔案到此</p>
+                  <p class="upload-hint">支援 JSON 格式</p>
+                  <input ref="jsonFileInput" type="file" accept=".json,application/json" style="display: none"
+                    @change="handleJsonFileSelect" />
+                </div>
+                <div v-if="selectedJsonFile" class="selected-file">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
                     <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                     <polyline points="13 2 13 9 20 9"></polyline>
                   </svg>
-                </div>
-                <div class="option-content">
-                  <h6 class="option-title">JSON 檔案</h6>
-                  <p class="option-description">匯入結構化的 JSON 格式題目檔案</p>
-                  <div class="option-hint">支援格式: .json</div>
-                </div>
-                <div class="option-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
+                  <span>{{ selectedJsonFile.name }}</span>
+                  <button @click="clearJsonFile" class="btn-clear-file">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
                 </div>
               </div>
 
-              <div class="import-option" @click="selectImportType('pdf')">
-                <div class="option-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                  </svg>
-                </div>
-                <div class="option-content">
-                  <h6 class="option-title">PDF 檔案</h6>
-                  <p class="option-description">自動解析考選部 PDF 考卷檔案</p>
-                  <div class="option-hint">支援格式: .pdf</div>
-                </div>
-                <div class="option-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
+              <!-- PDF Import Section -->
+              <div v-else-if="importType === 'pdf'" class="import-section">
+                <PdfUploadSection ref="pdfUploadRef" :show-result="false" :show-header="false" @preview-ready="handlePdfPreview"
+                  @error="handlePdfError" />
+                <div v-if="pdfErrorMessage" class="import-alert import-alert-error">
+                  {{ pdfErrorMessage }}
                 </div>
               </div>
             </div>
 
-            <!-- JSON Import Section -->
-            <div v-if="importType === 'json'" class="import-section">
-              <div class="upload-zone" @click="$refs.jsonFileInput.click()" @dragover.prevent
-                @drop.prevent="handleJsonDrop">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <p class="upload-text">點擊或拖放檔案至此</p>
-                <p class="upload-hint">支援 JSON 格式檔案</p>
-                <input ref="jsonFileInput" type="file" accept=".json,application/json" style="display: none"
-                  @change="handleJsonFileSelect" />
-              </div>
-              <div v-if="selectedJsonFile" class="selected-file">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2">
-                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                  <polyline points="13 2 13 9 20 9"></polyline>
-                </svg>
-                <span>{{ selectedJsonFile.name }}</span>
-                <button @click="clearJsonFile" class="btn-clear-file">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <!-- Step 3: Result -->
+            <div v-else-if="importStep === 3" class="import-step">
+              <div class="import-result-card">
+                <div class="import-result-header">
+                  <div class="import-result-title">匯入結果預覽</div>
+                  <div class="import-result-subtitle">
+                    {{ importTypeLabel }} ・共 {{ previewQuestions.length }} 題
+                  </div>
+                </div>
+                <div class="import-result-body">
+                  <div class="import-info-grid">
+                    <div class="import-info-item">
+                      <div class="import-info-label">題數</div>
+                      <div class="import-info-value">{{ previewQuestions.length }}</div>
+                    </div>
+                    <div class="import-info-item">
+                      <div class="import-info-label">科目</div>
+                      <div class="import-info-value">{{ importPreview?.examData?.subject || '-' }}</div>
+                    </div>
+                    <div class="import-info-item">
+                      <div class="import-info-label">分類</div>
+                      <div class="import-info-value">{{ importPreview?.examData?.category || '-' }}</div>
+                    </div>
+                  </div>
 
-            <!-- PDF Import Section -->
-            <div v-if="importType === 'pdf'" class="import-section">
-              <PdfUploadSection ref="pdfUploadRef" @import-success="handlePdfImportSuccess" />
+                  <div v-if="previewQuestions.length" class="import-preview">
+                    <div class="import-preview-header">題目預覽（前 {{ Math.min(previewQuestions.length, 5) }} 題）</div>
+                    <div class="import-preview-list">
+                      <div v-for="(q, i) in previewQuestions.slice(0, 5)" :key="i" class="import-preview-item">
+                        <span class="preview-index">{{ i + 1 }}</span>
+                        <span class="preview-text">{{ previewText(q) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="modern-modal-footer" v-if="importType === 'json' && selectedJsonFile">
+          <div class="modern-modal-footer" v-if="importStep === 2 || importStep === 3">
             <div class="footer-info">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2">
@@ -531,19 +604,24 @@
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>檔案將被解析並添加到暫存區</span>
+              <span v-if="importStep === 2">{{ importType === 'pdf' && pdfErrorMessage ? pdfErrorMessage : '上傳完成後可預覽匯入結果' }}</span>
+              <span v-else>確認後會將題目加入暫存區</span>
             </div>
             <div class="footer-actions">
-              <button class="footer-btn footer-btn-secondary" @click="closeImportModal">
-                取消
+              <button class="footer-btn footer-btn-secondary" @click="handleImportBack">
+                上一步
               </button>
-              <button class="footer-btn footer-btn-primary" @click="processJsonImport" :disabled="isImporting">
-                <svg v-if="!isImporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2">
+              <button v-if="importStep === 2" class="footer-btn footer-btn-primary" @click="handleImportNext"
+                :disabled="!canProceedStep2">
+                {{ importType === 'json' ? (isImporting ? '解析中...' : '下一步') : '前往結果' }}
+              </button>
+              <button v-else class="footer-btn footer-btn-primary" @click="confirmImport" :disabled="isImporting">
+                <svg v-if="!isImporting" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 <div v-else class="btn-spinner-small"></div>
-                {{ isImporting ? '匯入中...' : '開始匯入' }}
+                {{ isImporting ? '匯入中...' : '確認匯入' }}
               </button>
             </div>
           </div>
@@ -626,10 +704,31 @@ const bulkEditMode = ref('list') // 'list' or 'pending' - 標記批量編輯的�
 // Import Modal state
 const showImportModal = ref(false)
 const importType = ref(null) // 'json' or 'pdf'
+const importStep = ref(1)
+const importPreview = ref(null)
+const pdfErrorMessage = ref('')
 const selectedJsonFile = ref(null)
 const jsonFileInput = ref(null)
 const pdfUploadRef = ref(null)
 const isImporting = ref(false)
+
+const importTypeLabel = computed(() => {
+  if (importType.value === 'json') return 'JSON'
+  if (importType.value === 'pdf') return 'PDF'
+  return '匯入'
+})
+
+const previewQuestions = computed(() => importPreview.value?.questions || [])
+
+const canProceedStep2 = computed(() => {
+  if (importType.value === 'json') {
+    return !!selectedJsonFile.value && !isImporting.value
+  }
+  if (importType.value === 'pdf') {
+    return !!importPreview.value && importPreview.value.source === 'pdf' && !pdfErrorMessage.value
+  }
+  return false
+})
 
 const openBulkTagModal = () => {
   bulkEditMode.value = 'list'
@@ -1267,27 +1366,44 @@ const savePendingQuestions = async () => {
 // Import Modal Functions
 const showImportModalFunc = () => {
   showImportModal.value = true
+  importStep.value = 1
   importType.value = null
+  importPreview.value = null
+  pdfErrorMessage.value = ''
   selectedJsonFile.value = null
+  isImporting.value = false
+  if (pdfUploadRef.value?.reset) {
+    pdfUploadRef.value.reset()
+  }
 }
 
 const closeImportModal = () => {
   showImportModal.value = false
+  importStep.value = 1
   importType.value = null
+  importPreview.value = null
+  pdfErrorMessage.value = ''
   selectedJsonFile.value = null
   isImporting.value = false
+  if (pdfUploadRef.value?.reset) {
+    pdfUploadRef.value.reset()
+  }
 }
 
 const selectImportType = (type) => {
   importType.value = type
+  importStep.value = 2
+  importPreview.value = null
+  pdfErrorMessage.value = ''
 }
 
 const handleJsonFileSelect = (event) => {
   const file = event.target.files[0]
   if (file && file.type === 'application/json') {
     selectedJsonFile.value = file
+    importPreview.value = null
   } else {
-    alert('請選擇有效的 JSON 檔案')
+    alert('請上傳有效的 JSON 檔案')
   }
 }
 
@@ -1295,19 +1411,49 @@ const handleJsonDrop = (event) => {
   const file = event.dataTransfer.files[0]
   if (file && file.type === 'application/json') {
     selectedJsonFile.value = file
+    importPreview.value = null
   } else {
-    alert('請選擇有效的 JSON 檔案')
+    alert('請上傳有效的 JSON 檔案')
   }
 }
 
 const clearJsonFile = () => {
   selectedJsonFile.value = null
+  importPreview.value = null
   if (jsonFileInput.value) {
     jsonFileInput.value.value = ''
   }
 }
 
-const processJsonImport = async () => {
+const goToImportStep = (step) => {
+  if (step >= importStep.value) return
+  if (step === 1) {
+    importStep.value = 1
+    importType.value = null
+    importPreview.value = null
+    pdfErrorMessage.value = ''
+    selectedJsonFile.value = null
+    if (pdfUploadRef.value?.reset) {
+      pdfUploadRef.value.reset()
+    }
+    return
+  }
+  if (step === 2) {
+    importStep.value = 2
+  }
+}
+
+const handleImportBack = () => {
+  if (importStep.value === 3) {
+    importStep.value = 2
+    return
+  }
+  if (importStep.value === 2) {
+    goToImportStep(1)
+  }
+}
+
+const prepareJsonPreview = async () => {
   if (!selectedJsonFile.value) return
 
   isImporting.value = true
@@ -1322,24 +1468,75 @@ const processJsonImport = async () => {
     } else if (data.questions && Array.isArray(data.questions)) {
       questionsToImport = data.questions
     } else {
-      throw new Error('JSON 格式不正確，應為題目陣列或包含 questions 屬性的物件')
+      throw new Error('JSON 格式不正確，請提供 questions 陣列')
     }
 
-    // Add to pending questions
     const validQuestions = questionsToImport.filter(q => q.content && q.question_type)
     if (validQuestions.length === 0) {
-      throw new Error('沒有找到有效的題目數據')
+      throw new Error('未找到有效題目')
     }
 
-    pendingQuestions.value.push(...validQuestions)
-    alert(`成功匯入 ${validQuestions.length} 題到暫存區`)
-    closeImportModal()
+    importPreview.value = {
+      source: 'json',
+      examData: {
+        subject: data.subject || '',
+        category: data.category || ''
+      },
+      questions: validQuestions,
+      answers: null
+    }
+    importStep.value = 3
   } catch (err) {
     console.error('JSON 匯入失敗:', err)
     alert(`匯入失敗: ${err.message}`)
   } finally {
     isImporting.value = false
   }
+}
+
+const handlePdfPreview = (payload) => {
+  if (!payload?.questions?.length) return
+  importPreview.value = { source: 'pdf', ...payload }
+  pdfErrorMessage.value = ''
+}
+
+const handlePdfError = (message) => {
+  if (message && message.includes('答案')) {
+    return
+  }
+  pdfErrorMessage.value = message || 'PDF 解析失敗'
+  importPreview.value = null
+}
+
+const handleImportNext = async () => {
+  if (importStep.value !== 2) return
+  if (importType.value === 'json') {
+    await prepareJsonPreview()
+    return
+  }
+  if (importType.value === 'pdf' && importPreview.value) {
+    importStep.value = 3
+  }
+}
+
+const confirmImport = async () => {
+  if (!importPreview.value) return
+
+  if (importType.value === 'json') {
+    pendingQuestions.value.push(...(importPreview.value.questions || []))
+    alert(`已加入 ${importPreview.value.questions.length} 題到暫存區`)
+    closeImportModal()
+    return
+  }
+
+  if (importType.value === 'pdf') {
+    handlePdfImportSuccess(importPreview.value)
+  }
+}
+
+const previewText = (q) => {
+  const text = q?.question || q?.content || ''
+  return text.length > 100 ? `${text.slice(0, 100)}...` : text
 }
 
 const handlePdfImportSuccess = (data) => {
@@ -2099,7 +2296,307 @@ defineExpose({
   }
 }
 
+
+.import-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.step-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #64748B);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.step-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.step-item.active {
+  color: var(--primary, #476996);
+}
+
+.step-item.current {
+  color: var(--text-primary, #1E293B);
+}
+
+.step-index {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary, #476996);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.step-divider {
+  width: auto;
+  height: auto;
+  background: transparent;
+  min-width: auto;
+  color: var(--text-secondary, #64748B);
+}
+
+.step-divider::before {
+  content: "›";
+  font-size: 14px;
+  line-height: 1;
+}
+
+.import-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+}
+
+.link-btn {
+  border: none;
+  background: transparent;
+  color: var(--primary, #476996);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.import-alert {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.import-result-card {
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
+.import-result-header {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border, #CBD5E1);
+}
+
+.import-result-title {
+  font-weight: 700;
+  color: var(--text-primary, #1E293B);
+}
+
+.import-result-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary, #64748B);
+  margin-top: 4px;
+}
+
+.import-result-body {
+  padding: 16px;
+}
+
+.import-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.import-info-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.import-info-label {
+  font-size: 12px;
+  color: var(--text-secondary, #64748B);
+}
+
+.import-info-value {
+  font-weight: 600;
+  color: var(--text-primary, #1E293B);
+}
+
+.import-preview-header {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary, #1E293B);
+}
+
+.import-preview-list {
+  border: 1px solid var(--border, #CBD5E1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.import-preview-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #CBD5E1);
+  background: white;
+}
+
+.import-preview-item:last-child {
+  border-bottom: none;
+}
+
+.preview-index {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary, #476996);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.preview-text {
+  font-size: 13px;
+  color: var(--text-primary, #1E293B);
+}
+
+@media (max-width: 768px) {
+  .import-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-divider {
+    display: none;
+  }
+}
+
 /* Dark Mode Styles for Import Modal */
+
+:root[data-theme="dark"] .import-steps,
+.dark .import-steps {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .step-item,
+.dark .step-item {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .step-item.active,
+.dark .step-item.active {
+  color: #cbd5f5;
+}
+
+:root[data-theme="dark"] .step-item.current,
+.dark .step-item.current {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .step-divider,
+.dark .step-divider {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .step-title,
+.dark .step-title {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .import-result-card,
+.dark .import-result-card {
+  background: #0f172a;
+  border-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .import-result-header,
+.dark .import-result-header {
+  background: #111827;
+  border-bottom-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .import-result-title,
+.dark .import-result-title {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .import-result-subtitle,
+.dark .import-result-subtitle {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .import-info-item,
+.dark .import-info-item {
+  background: #111827;
+}
+
+:root[data-theme="dark"] .import-info-label,
+.dark .import-info-label {
+  color: var(--text-secondary-dark, #94a3b8);
+}
+
+:root[data-theme="dark"] .import-info-value,
+.dark .import-info-value {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .import-preview-header,
+.dark .import-preview-header {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .import-preview-list,
+.dark .import-preview-list {
+  border-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .import-preview-item,
+.dark .import-preview-item {
+  background: #0f172a;
+  border-bottom-color: var(--border-dark, #334155);
+}
+
+:root[data-theme="dark"] .preview-text,
+.dark .preview-text {
+  color: var(--text-primary-dark, #f1f5f9);
+}
+
+:root[data-theme="dark"] .import-alert-error,
+.dark .import-alert-error {
+  background: #2b1515;
+  border-color: #7f1d1d;
+  color: #fecaca;
+}
+
+
 :root[data-theme="dark"] .import-option,
 .dark .import-option {
   background: var(--bg-secondary, #1e293b);
@@ -2177,5 +2674,102 @@ defineExpose({
 .dark .modern-modal-footer {
   background: var(--bg-secondary, #1e293b);
   border-color: var(--border-dark, #334155);
+}
+
+/* Pending Section - Dark Mode */
+:root[data-theme="dark"] .pending-section,
+.dark .pending-section {
+  background: #0f172a;
+  border-color: #a16207;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="dark"] .pending-header,
+.dark .pending-header {
+  background: linear-gradient(135deg, #a16207 0%, #92400e 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="dark"] .header-icon,
+.dark .header-icon {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="dark"] .pending-title,
+.dark .pending-title {
+  color: #fef3c7;
+}
+
+:root[data-theme="dark"] .pending-subtitle,
+.dark .pending-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:root[data-theme="dark"] .btn-bulk-edit-pending,
+.dark .btn-bulk-edit-pending,
+:root[data-theme="dark"] .btn-clear-pending,
+.dark .btn-clear-pending {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fef3c7;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+:root[data-theme="dark"] .btn-save-pending,
+.dark .btn-save-pending {
+  background: #0f172a;
+  color: #fcd34d;
+  border: 1px solid #f59e0b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="dark"] .pending-item,
+.dark .pending-item {
+  background: #1f2937;
+  border-color: #a16207;
+}
+
+:root[data-theme="dark"] .pending-item:hover,
+.dark .pending-item:hover {
+  background: #263244;
+  border-color: #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+}
+
+:root[data-theme="dark"] .pending-number,
+.dark .pending-number {
+  background: #f59e0b;
+  color: #0f172a;
+}
+
+:root[data-theme="dark"] .pending-text,
+.dark .pending-text {
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .meta-badge,
+.dark .meta-badge {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
+
+:root[data-theme="dark"] .meta-badge.meta-answer,
+.dark .meta-badge.meta-answer {
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+}
+
+:root[data-theme="dark"] .meta-info,
+.dark .meta-info {
+  color: #94a3b8;
+}
+
+:root[data-theme="dark"] .btn-edit-pending:hover,
+.dark .btn-edit-pending:hover {
+  background: rgba(71, 105, 150, 0.25);
+}
+
+:root[data-theme="dark"] .btn-remove-pending:hover,
+.dark .btn-remove-pending:hover {
+  background: rgba(220, 38, 38, 0.2);
 }
 </style>
