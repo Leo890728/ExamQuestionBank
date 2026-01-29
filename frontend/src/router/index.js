@@ -34,7 +34,8 @@ const router = createRouter({
         { path: 'exams', component: () => import('@/components/AdminExamManagement.vue') },
         { path: 'questions', component: () => import('@/components/AdminQuestionManagement.vue') },
         { path: 'tags', component: () => import('@/components/AdminTagManagement.vue') },
-        { path: 'users', component: () => import('@/components/AdminUserManagement.vue') }
+        { path: 'users', component: () => import('@/components/AdminUserManagement.vue') },
+        { path: 'rag', component: () => import('@/components/AdminRagManagement.vue') }
       ]
     },
     {
