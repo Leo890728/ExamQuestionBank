@@ -97,6 +97,14 @@
             </svg>
             <span>使用者</span>
           </button>
+          <button :class="['tab-btn', { active: currentTab === 'rag' }]" @click="setTab('rag')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+            </svg>
+            <span>RAG 分析</span>
+          </button>
         </div>
       </div>
 
