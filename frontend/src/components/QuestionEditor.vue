@@ -318,6 +318,7 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
+import { QuestionModel } from '@/models/Question'
 
 const props = defineProps({
   question: {
@@ -358,45 +359,31 @@ const examSettings = ref({
 const tagOptions = ref([])
 const selectedTags = ref([])
 
-const normalizeType = (value) => {
-  if (value === 'multipleChoice' || value === 'essay') return value
-  if (value === '選擇題' || value === '多選題' || value === '是非題') return 'multipleChoice'
-  if (value === '申論題') return 'essay'
-  return 'multipleChoice'
-}
-
-const normalizeDifficulty = (value) => {
-  if (value === 'medium') return 'normal'
-  if (value === 'easy' || value === 'normal' || value === 'hard' || value === 'insane') return value
-  return 'normal'
-}
-
-const normalizeYear = (value) => {
-  if (value === null || value === undefined || value === '') return null
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
 // 監聽 question prop 的變化
 watch(() => props.question, (newQuestion) => {
   if (newQuestion) {
+    const normalized = QuestionModel.fromRpcWithExtras(newQuestion)
     formData.value = {
-      subject: newQuestion.subject || '',
-      category: newQuestion.category || '',
-      year: normalizeYear(newQuestion.year),
-      source: newQuestion.source || '',
-      type: normalizeType(newQuestion.type ?? newQuestion.question_type),
-      difficulty: normalizeDifficulty(newQuestion.difficulty),
-      content: newQuestion.content || '',
-      explanation: newQuestion.explanation || '',
-      options: newQuestion.options ? [...newQuestion.options] : [],
-      tag_ids: newQuestion.tag_ids ? newQuestion.tag_ids : (newQuestion.tags ? newQuestion.tags.map(t => t.id) : [])
+      subject: normalized.subject || '',
+      category: normalized.category || '',
+      year: normalized.year ?? null,
+      source: normalized.source || '',
+      type: normalized.question_type || 'multipleChoice',
+      difficulty: normalized.difficulty || 'normal',
+      content: normalized.content || '',
+      explanation: normalized.explanation || '',
+      options: Array.isArray(normalized.options) ? normalized.options.map(option => ({ ...option })) : [],
+      tag_ids: Array.isArray(normalized.tag_ids)
+        ? normalized.tag_ids
+        : Array.isArray(normalized.tags)
+          ? normalized.tags.map(t => t.id)
+          : []
     }
     // set selectedTags to match tag objects
-    if (newQuestion.tags && Array.isArray(newQuestion.tags)) {
-      selectedTags.value = newQuestion.tags
-    } else if (newQuestion.tag_ids && Array.isArray(newQuestion.tag_ids) && tagOptions.value.length > 0) {
-      selectedTags.value = tagOptions.value.filter(t => newQuestion.tag_ids.includes(t.id))
+    if (normalized.tags && Array.isArray(normalized.tags)) {
+      selectedTags.value = normalized.tags
+    } else if (normalized.tag_ids && Array.isArray(normalized.tag_ids) && tagOptions.value.length > 0) {
+      selectedTags.value = tagOptions.value.filter(t => normalized.tag_ids.includes(t.id))
     } else {
       selectedTags.value = []
     }
@@ -451,9 +438,6 @@ const getQuestionPayload = () => {
 
   return {
     ...formData.value,
-    type: normalizeType(formData.value.type),
-    difficulty: normalizeDifficulty(formData.value.difficulty),
-    year: normalizeYear(formData.value.year),
     content: formData.value.content?.toString().trim()
   }
 }

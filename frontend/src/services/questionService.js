@@ -3,83 +3,18 @@
  * No Django fallback - uses RPC functions exclusively
  */
 import { supabase } from '@/lib/supabase'
+import { QuestionModel } from '@/models/Question'
 
-const normalizeType = (value, options = []) => {
-  if (value === 'multipleChoice' || value === 'essay') return value
-  if (value === '選擇題' || value === '多選題' || value === '是非題') return 'multipleChoice'
-  if (value === '申論題') return 'essay'
-  if (options && options.length > 0) return 'multipleChoice'
-  return 'essay'
+const toQuestionModel = (raw) => {
+  if (!raw || typeof raw !== 'object') return null
+  return QuestionModel.fromRpcWithExtras(raw)
 }
 
-const normalizeDifficulty = (value) => {
-  if (value === 'medium') return 'normal'
-  if (value === 'easy' || value === 'normal' || value === 'hard' || value === 'insane') return value
-  return 'normal'
-}
-
-const normalizeYear = (value) => {
-  if (value === null || value === undefined || value === '') return null
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-const normalizeText = (value) => {
-  if (value === null || value === undefined) return null
-  const text = value.toString().trim()
-  return text.length ? text : null
-}
-
-const normalizeOptions = (options) => {
-  if (!Array.isArray(options)) return []
-  return options
-    .map((option, index) => ({
-      content: option?.content?.toString().trim() || '',
-      is_correct: Boolean(option?.is_correct),
-      order: Number.isFinite(option?.order) ? option.order : index + 1
-    }))
-    .filter(option => option.content.length > 0)
-}
-
-const buildAddQuestionPayload = (questionData) => {
-  const options = normalizeOptions(questionData?.options)
-  return {
-    content: normalizeText(questionData?.content),
-    explanation: normalizeText(questionData?.explanation),
-    question_type: normalizeType(questionData?.type ?? questionData?.question_type, options),
-    difficulty: normalizeDifficulty(questionData?.difficulty),
-    subject: normalizeText(questionData?.subject),
-    category: normalizeText(questionData?.category),
-    year: normalizeYear(questionData?.year),
-    source: normalizeText(questionData?.source),
-    options,
-    tag_ids: Array.isArray(questionData?.tag_ids)
-      ? questionData.tag_ids
-      : Array.isArray(questionData?.tags)
-        ? questionData.tags.map(tag => tag.id)
-        : null
-  }
-}
-
-const buildUpdateQuestionPayload = (questionId, questionData) => {
-  const options = normalizeOptions(questionData?.options)
-  return {
-    p_id: Number(questionId),
-    p_content: normalizeText(questionData?.content),
-    p_explanation: normalizeText(questionData?.explanation),
-    p_question_type: normalizeType(questionData?.type ?? questionData?.question_type, options),
-    p_difficulty: normalizeDifficulty(questionData?.difficulty),
-    p_subject: normalizeText(questionData?.subject),
-    p_category: normalizeText(questionData?.category),
-    p_year: normalizeYear(questionData?.year),
-    p_source: normalizeText(questionData?.source),
-    p_options: options,
-    p_tag_ids: Array.isArray(questionData?.tag_ids)
-      ? questionData.tag_ids
-      : Array.isArray(questionData?.tags)
-        ? questionData.tags.map(tag => tag.id)
-        : null
-  }
+const mapQuestionList = (list) => {
+  if (!Array.isArray(list)) return []
+  return list
+    .map(item => toQuestionModel(item))
+    .filter(Boolean)
 }
 
 const questionService = {
@@ -95,6 +30,12 @@ const questionService = {
       p_page_size: params.page_size || 20
     })
     if (error) throw new Error(error.message)
+    if (data?.results) {
+      return { data: { ...data, results: mapQuestionList(data.results) } }
+    }
+    if (Array.isArray(data)) {
+      return { data: mapQuestionList(data) }
+    }
     return { data }
   },
 
@@ -104,7 +45,7 @@ const questionService = {
       p_id: parseInt(id)
     })
     if (error) throw new Error(error.message)
-    return { data }
+    return { data: data ? toQuestionModel(data) : null }
   },
 
   // Toggle bookmark for a question
@@ -133,12 +74,12 @@ const questionService = {
   async getBookmarkedQuestions() {
     const { data, error } = await supabase.rpc('get_bookmarks')
     if (error) throw new Error(error.message)
-    return { data: data || [] }
+    return { data: mapQuestionList(data || []) }
   },
 
   // Update a question (admin only)
   async updateQuestion(questionId, questionData) {
-    const updatePayload = buildUpdateQuestionPayload(questionId, questionData)
+    const updatePayload = QuestionModel.toUpdatePayload(questionId, questionData)
     const { data, error } = await supabase.rpc('update_question', updatePayload)
     if (error) throw new Error(error.message)
     return { data }
@@ -146,7 +87,7 @@ const questionService = {
 
   // Create a new question (admin only)
   async createQuestion(questionData) {
-    const payload = buildAddQuestionPayload(questionData)
+    const payload = QuestionModel.toAddPayload(questionData)
     const { data, error } = await supabase.rpc('add_question', payload)
     if (error) throw new Error(error.message)
     return { data: { id: data } }
@@ -172,7 +113,7 @@ const questionService = {
     const results = []
     for (let i = 0; i < questions.length; i += 1) {
       try {
-        const payload = buildAddQuestionPayload(questions[i])
+        const payload = QuestionModel.toAddPayload(questions[i])
         const { data, error } = await supabase.rpc('add_question', payload)
         if (error) throw error
         results.push({ success: true, id: data, index: i })
