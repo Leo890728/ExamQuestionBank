@@ -473,7 +473,7 @@ import { useRouter, useRoute } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
-import tagService from '@/services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import AIChatInterface from '@/components/AIChatInterface.vue'
 import QuestionList from '@/components/QuestionList.vue'
 import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
@@ -484,6 +484,7 @@ import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 const router = useRouter()
 const route = useRoute()
+const tagStore = useTagStore()
 // route-based tab, default to exams
 const currentTab = computed(() => {
     const t = route.query.tab
@@ -754,7 +755,7 @@ const loadData = async () => {
 // Load tags for search filter
 const loadTags = async () => {
     try {
-        const res = await tagService.getTags()
+        const res = await tagStore.getTags()
         let items = res.data?.results || res.data
         if (!Array.isArray(items)) items = []
         tagOptions.value = items.filter(t => t != null)

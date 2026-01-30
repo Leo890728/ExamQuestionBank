@@ -279,10 +279,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import examService from '@/services/examService'
 import questionService from '@/services/questionService'
-import tagService from '@/services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import QuestionList from '@/components/QuestionList.vue'
 
 const router = useRouter()
+const tagStore = useTagStore()
 
 // Mock Exam Modal state
 const showMockExamModal = ref(false)
@@ -489,7 +490,7 @@ const loadSubjects = async () => {
 
 const loadTags = async () => {
     try {
-        const { data } = await tagService.getTags()
+        const { data } = await tagStore.getTags()
         tags.value = Array.isArray(data) ? data : (data?.results || [])
     } catch (error) {
         console.error('載入標籤失敗:', error)

@@ -140,6 +140,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import tagService from '@/services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 
 // State
 const tags = ref([])
@@ -147,6 +148,7 @@ const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
 const searchQuery = ref('')
+const tagStore = useTagStore()
 
 // Modal states
 const showAddModal = ref(false)
@@ -169,7 +171,7 @@ const filteredTags = computed(() => {
 const loadTags = async () => {
     loading.value = true
     try {
-        const response = await tagService.getTags()
+        const response = await tagStore.getTags()
         // API returns paginated response: { count, results: [...] }
         const data = response.data || response
         tags.value = (data.results || data || []).filter(t => t != null)
@@ -208,6 +210,7 @@ const createTag = async () => {
     saving.value = true
     try {
         await tagService.createTag({ name: formData.value.name.trim() })
+        tagStore.clearCache()
         closeModals()
         await loadTags()
     } catch (error) {
@@ -223,6 +226,7 @@ const updateTag = async () => {
     saving.value = true
     try {
         await tagService.updateTag(editingTag.value.id, { name: formData.value.name.trim() })
+        tagStore.clearCache()
         closeModals()
         await loadTags()
     } catch (error) {
@@ -243,6 +247,7 @@ const deleteTag = async () => {
     deleting.value = true
     try {
         await tagService.deleteTag(tagToDelete.value.id)
+        tagStore.clearCache()
         showDeleteModal.value = false
         tagToDelete.value = null
         await loadTags()

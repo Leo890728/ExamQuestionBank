@@ -3,6 +3,28 @@
     <div class="editor-card">
       <div class="form-body">
         <form @submit.prevent="handleSave">
+          <!-- category (類科) -->
+          <div class="form-group">
+            <label for="category" class="form-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+              <span>類科</span>
+            </label>
+            <input
+              id="category"
+              v-model="formData.category"
+              type="text"
+              placeholder="例：類科名稱..."
+              class="form-input"
+            />
+          </div>
+
           <!-- 科目 -->
           <div class="form-group">
             <label for="subject" class="form-label">
@@ -21,28 +43,6 @@
               class="form-input"
             />
             <div v-if="!formValidation.subject" class="form-error">科目為必填</div>
-          </div>
-  
-          <!-- 題型分類 -->
-          <div class="form-group">
-            <label for="category" class="form-label">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="8" y1="6" x2="21" y2="6"></line>
-                <line x1="8" y1="12" x2="21" y2="12"></line>
-                <line x1="8" y1="18" x2="21" y2="18"></line>
-                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-              </svg>
-              <span>題型分類</span>
-            </label>
-            <input
-              id="category"
-              v-model="formData.category"
-              type="text"
-              placeholder="例：選擇題、申論題、綜合題型..."
-              class="form-input"
-            />
           </div>
 
           <!-- 年份與來源 -->
@@ -488,6 +488,7 @@ defineExpose({
 
 // Tag service and components
 import tagService from '../services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import { useDebounceFn } from '@vueuse/core'
@@ -495,6 +496,7 @@ import { useDebounceFn } from '@vueuse/core'
 // tagOptions 和 selectedTags 已在上方定義
 const newTagName = ref('')
 const tagSearchQuery = ref('')
+const tagStore = useTagStore()
 
 // 用於在 tagOptions 載入完成後重新設定 selectedTags
 const updateSelectedTagsFromIds = () => {
@@ -508,7 +510,7 @@ const updateSelectedTagsFromIds = () => {
 
 onMounted(async () => {
   try {
-    const res = await tagService.getTags()
+    const res = await tagStore.getTags()
     let items = res.data?.results || res.data
     if (!Array.isArray(items)) items = []
     tagOptions.value = items.filter(t => t != null)
@@ -540,6 +542,7 @@ const handleCreateTag = async () => {
       selectedTags.value.push(createdTag)
     }
     formData.value.tag_ids = selectedTags.value.map(t => t.id)
+    tagStore.clearCache()
     newTagName.value = ''
   } catch (err) {
     console.error('建立標籤失敗:', err)
@@ -550,7 +553,7 @@ const handleCreateTag = async () => {
 // Debounced search for tags
 const doTagSearch = useDebounceFn(async (query) => {
   try {
-    const res = await tagService.getTags({ search: query })
+    const res = await tagStore.getTags({ search: query })
     let items = res.data?.results || res.data
     if (!Array.isArray(items)) items = []
     tagOptions.value = items.filter(t => t != null)

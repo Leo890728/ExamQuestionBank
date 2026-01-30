@@ -1,4 +1,4 @@
-/**
+ï»¿/**
  * Global Dark Mode Override Styles
  * This file provides dark mode styling with high specificity
  * to override component-level scoped styles.
@@ -92,7 +92,8 @@ html:is(.dark, [data-bs-theme="dark"]) .sidebar,
 html:is(.dark, [data-bs-theme="dark"]) .input-container {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Cards with featured/white forced state */
@@ -124,7 +125,8 @@ html:is(.dark, [data-bs-theme="dark"]) select,
 html:is(.dark, [data-bs-theme="dark"]) textarea {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) input::placeholder,
@@ -168,7 +170,8 @@ html:is(.dark, [data-bs-theme="dark"]) .stat-item {
 html:is(.dark, [data-bs-theme="dark"]) .btn-secondary,
 html:is(.dark, [data-bs-theme="dark"]) .action-btn-secondary {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Modals and dialogs */
@@ -192,7 +195,8 @@ html:is(.dark, [data-bs-theme="dark"]) .extension-demo {
 /* Pricing features list items */
 html:is(.dark, [data-bs-theme="dark"]) .pricing-features li {
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Stats section */
@@ -229,7 +233,8 @@ html:is(.dark, [data-bs-theme="dark"]) .quiz-header,
 html:is(.dark, [data-bs-theme="dark"]) .option-card {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .option-card:hover {
@@ -262,7 +267,8 @@ html:is(.dark, [data-bs-theme="dark"]) .pagination-container {
 html:is(.dark, [data-bs-theme="dark"]) .btn-page {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Results table rows */
@@ -271,7 +277,8 @@ html:is(.dark, [data-bs-theme="dark"]) .trend-item,
 html:is(.dark, [data-bs-theme="dark"]) .hot-item {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .results-table-row:hover,
@@ -297,7 +304,8 @@ html:is(.dark, [data-bs-theme="dark"]) .review-header {
 html:is(.dark, [data-bs-theme="dark"]) .rating-btn {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .rating-btn:hover {
@@ -335,7 +343,8 @@ html:is(.dark, [data-bs-theme="dark"]) .tag-badge {
 /* Subject badge */
 html:is(.dark, [data-bs-theme="dark"]) .meta-badge {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Dropdown menus */
@@ -372,7 +381,8 @@ html:is(.dark, [data-bs-theme="dark"]) .practice-list,
 html:is(.dark, [data-bs-theme="dark"]) .practice-list-container {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .question-item:hover,
@@ -381,14 +391,15 @@ html:is(.dark, [data-bs-theme="dark"]) .question-row:hover {
   background: var(--surface-muted) !important;
 }
 
-/* Exam preview question cards (ç¬?é¡? ç¬?é¡? etc) */
+/* Exam preview question cards (ï¿½?ï¿½? ï¿½?ï¿½? etc) */
 html:is(.dark, [data-bs-theme="dark"]) .exam-question-item,
 html:is(.dark, [data-bs-theme="dark"]) .exam-question-card,
 html:is(.dark, [data-bs-theme="dark"]) .question-preview-card,
 html:is(.dark, [data-bs-theme="dark"]) .preview-item {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .exam-question-item:hover,
@@ -424,7 +435,8 @@ html:is(.dark, [data-bs-theme="dark"]) .choice-item,
 html:is(.dark, [data-bs-theme="dark"]) .answer-item {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .option-item:hover,
@@ -452,7 +464,8 @@ html:is(.dark, [data-bs-theme="dark"]) .metric-card,
 html:is(.dark, [data-bs-theme="dark"]) .data-card {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Analytics - Chart containers and graphs */
@@ -480,7 +493,8 @@ html:is(.dark, [data-bs-theme="dark"]) .feature-item,
 html:is(.dark, [data-bs-theme="dark"]) .welcome-feature {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .analysis-feature:hover,
@@ -521,8 +535,8 @@ html:is(.dark, [data-bs-theme="dark"]) .dropdown-select {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
   color: var(--text-primary) !important;
+  border-radius: 10px !important;
 }
-
 /* Pagination bar at bottom */
 html:is(.dark, [data-bs-theme="dark"]) .pagination-bar,
 html:is(.dark, [data-bs-theme="dark"]) .page-controls,
@@ -536,7 +550,8 @@ html:is(.dark, [data-bs-theme="dark"]) .page-link,
 html:is(.dark, [data-bs-theme="dark"]) .page-number {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .page-btn.active,
@@ -615,7 +630,8 @@ html:is(.dark, [data-bs-theme="dark"]) .question-navigator {
 html:is(.dark, [data-bs-theme="dark"]) .nav-btn {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .nav-btn.current {
@@ -633,14 +649,15 @@ html:is(.dark, [data-bs-theme="dark"]) .nav-btn.wrong {
   border-color: var(--destructive) !important;
 }
 
-/* ExamPreviewView - Question cards (ç¬?é¡? ç¬?é¡? */
+/* ExamPreviewView - Question cards (ï¿½?ï¿½? ï¿½?ï¿½? */
 html:is(.dark, [data-bs-theme="dark"]) .exam-preview-container,
 html:is(.dark, [data-bs-theme="dark"]) .exam-preview,
 html:is(.dark, [data-bs-theme="dark"]) .question-list,
 html:is(.dark, [data-bs-theme="dark"]) .question-card {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .question-card:hover {
@@ -664,7 +681,8 @@ html:is(.dark, [data-bs-theme="dark"]) .feature-grid,
 html:is(.dark, [data-bs-theme="dark"]) .feature-box {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* AnalyticsView - All card types explicitly */
@@ -676,7 +694,8 @@ html:is(.dark, [data-bs-theme="dark"]) .results-card,
 html:is(.dark, [data-bs-theme="dark"]) .wrong-card {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Admin filters explicitly */
@@ -690,7 +709,8 @@ html:is(.dark, [data-bs-theme="dark"]) .filter-select-wrapper,
 html:is(.dark, [data-bs-theme="dark"]) .filter-btn {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Progress bar container */
@@ -708,7 +728,8 @@ html:is(.dark, [data-bs-theme="dark"]) .answer-record {
 html:is(.dark, [data-bs-theme="dark"]) .arrow-btn {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .arrow-btn:hover:not(:disabled) {
@@ -725,7 +746,8 @@ html:is(.dark, [data-bs-theme="dark"]) .meta-tag {
 /* Question content area */
 html:is(.dark, [data-bs-theme="dark"]) .question-content {
   background: var(--surface) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* ===== FINAL FIXES FOR REMAINING WHITE ELEMENTS ===== */
@@ -734,12 +756,14 @@ html:is(.dark, [data-bs-theme="dark"]) .question-content {
 html:is(.dark, [data-bs-theme="dark"]) .timer-component {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .timer-label,
 html:is(.dark, [data-bs-theme="dark"]) .timer-value {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Pagination wrapper and items (Bootstrap pagination) */
@@ -757,7 +781,8 @@ html:is(.dark, [data-bs-theme="dark"]) .page-jumper {
 html:is(.dark, [data-bs-theme="dark"]) .pagination .page-link {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .pagination .page-item.active .page-link {
@@ -774,7 +799,8 @@ html:is(.dark, [data-bs-theme="dark"]) .pagination .page-link:hover:not(.disable
 html:is(.dark, [data-bs-theme="dark"]) .page-size-select {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Heatmap grid and cells */
@@ -793,7 +819,8 @@ html:is(.dark, [data-bs-theme="dark"]) .heatmap-cell {
 html:is(.dark, [data-bs-theme="dark"]) .heatmap-tooltip {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Exam header and info section */
@@ -803,14 +830,15 @@ html:is(.dark, [data-bs-theme="dark"]) .exam-title,
 html:is(.dark, [data-bs-theme="dark"]) .exam-details {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Subject tags in quiz mode */
 html:is(.dark, [data-bs-theme="dark"]) .subject-tag,
 html:is(.dark, [data-bs-theme="dark"]) .category-tag,
 html:is(.dark, [data-bs-theme="dark"]) .topic-tag,
-html:is(.dark, [data-bs-theme="dark"]) [class*="-tag"]:not(.tag-badge) {
+html:is(.dark, [data-bs-theme="dark"]) [class*="-tag"]:not(.tag-badge):not(.item-tags) {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
   color: var(--text-secondary) !important;
@@ -838,20 +866,23 @@ html:is(.dark, [data-bs-theme="dark"]) .quiz-actions {
 /* Quiz question display title and badge area */
 html:is(.dark, [data-bs-theme="dark"]) .question-header h2,
 html:is(.dark, [data-bs-theme="dark"]) .question-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Form select dropdowns (Bootstrap) */
 html:is(.dark, [data-bs-theme="dark"]) .form-select {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .form-control {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* General buttons that might have white bg */
@@ -869,7 +900,8 @@ html:is(.dark, [data-bs-theme="dark"]) .question-list-item,
 html:is(.dark, [data-bs-theme="dark"]) .search-result-card {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .search-question-badges .badge,
@@ -889,19 +921,22 @@ html:is(.dark, [data-bs-theme="dark"]) .history-panel,
 html:is(.dark, [data-bs-theme="dark"]) .chat-input-container {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .message.assistant .message-content {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .chat-input {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .history-item {
@@ -932,7 +967,8 @@ html:is(.dark, [data-bs-theme="dark"]) .progress-tracker,
 html:is(.dark, [data-bs-theme="dark"]) .quiz-header {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .quiz-panel,
@@ -951,14 +987,16 @@ html:is(.dark, [data-bs-theme="dark"]) .saving-modal,
 html:is(.dark, [data-bs-theme="dark"]) .auto-distribute-modal {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 5. Mock Exam & Count Options */
 html:is(.dark, [data-bs-theme="dark"]) .count-options .count-btn {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .count-options .count-btn.active {
@@ -968,14 +1006,16 @@ html:is(.dark, [data-bs-theme="dark"]) .count-options .count-btn.active {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .source-checkbox {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 6. Analytics Header */
 html:is(.dark, [data-bs-theme="dark"]) .analytics-header,
 html:is(.dark, [data-bs-theme="dark"]) .page-header,
 html:is(.dark, [data-bs-theme="dark"]) .section-header {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 7. Mode Cards (Specific) */
@@ -1000,7 +1040,8 @@ html:is(.dark, [data-bs-theme="dark"]) .multiselect__tags {
 html:is(.dark, [data-bs-theme="dark"]) .multiselect__input,
 html:is(.dark, [data-bs-theme="dark"]) .multiselect__single {
   background: transparent !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .multiselect__content-wrapper {
@@ -1009,7 +1050,8 @@ html:is(.dark, [data-bs-theme="dark"]) .multiselect__content-wrapper {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .multiselect__option {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   background: var(--surface) !important;
 }
 
@@ -1027,7 +1069,8 @@ html:is(.dark, [data-bs-theme="dark"]) .multiselect__tag {
 html:is(.dark, [data-bs-theme="dark"]) .btn-light,
 html:is(.dark, [data-bs-theme="dark"]) .btn-white {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   border-color: var(--border) !important;
 }
 
@@ -1058,7 +1101,8 @@ html:is(.dark, [data-bs-theme="dark"]) .card-body,
 html:is(.dark, [data-bs-theme="dark"]) .card-footer {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Loading spinner containers */
@@ -1071,7 +1115,8 @@ html:is(.dark, [data-bs-theme="dark"]) .loading-state {
 html:is(.dark, [data-bs-theme="dark"]) .quiz-message {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* ===== CRITICAL TEXT COLOR FIXES FOR QUIZ MODE ===== */
@@ -1086,7 +1131,8 @@ html:is(.dark, [data-bs-theme="dark"]) .question-panel p,
 html:is(.dark, [data-bs-theme="dark"]) .question-panel span,
 html:is(.dark, [data-bs-theme="dark"]) .main-panel p,
 html:is(.dark, [data-bs-theme="dark"]) .split-view-container p {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Answer options - ensure readable text */
@@ -1094,7 +1140,8 @@ html:is(.dark, [data-bs-theme="dark"]) .option-item,
 html:is(.dark, [data-bs-theme="dark"]) .option-text,
 html:is(.dark, [data-bs-theme="dark"]) .option-label,
 html:is(.dark, [data-bs-theme="dark"]) .option-content {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .option-item:hover {
@@ -1106,19 +1153,22 @@ html:is(.dark, [data-bs-theme="dark"]) .quiz-title,
 html:is(.dark, [data-bs-theme="dark"]) .quiz-progress,
 html:is(.dark, [data-bs-theme="dark"]) .quiz-info span,
 html:is(.dark, [data-bs-theme="dark"]) .quiz-header span {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Navigation buttons - override white background */
 html:is(.dark, [data-bs-theme="dark"]) .nav-btn:not(.current):not(.answered):not(.wrong) {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Back button */
 html:is(.dark, [data-bs-theme="dark"]) .btn-back {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .btn-back:hover {
@@ -1131,7 +1181,8 @@ html:is(.dark, [data-bs-theme="dark"]) .record-label {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .record-stat {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Meta tags in question panel */
@@ -1146,7 +1197,8 @@ html:is(.dark, [data-bs-theme="dark"]) .meta-tag.difficulty {
 html:is(.dark, [data-bs-theme="dark"]) .arrow-btn.prev,
 html:is(.dark, [data-bs-theme="dark"]) .arrow-btn.next {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Heatmap cells - fix white empty cells */
@@ -1166,7 +1218,8 @@ html:is(.dark, [data-bs-theme="dark"]) .time-range-btn,
 html:is(.dark, [data-bs-theme="dark"]) .range-btn {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .time-range-btn.active,
@@ -1186,14 +1239,16 @@ html:is(.dark, [data-bs-theme="dark"]) .exam-preview-header,
 html:is(.dark, [data-bs-theme="dark"]) .preview-header,
 html:is(.dark, [data-bs-theme="dark"]) .exam-title-card {
   background: var(--surface) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Question card content text in exam preview */
 html:is(.dark, [data-bs-theme="dark"]) .question-card p,
 html:is(.dark, [data-bs-theme="dark"]) .question-card .content,
 html:is(.dark, [data-bs-theme="dark"]) .question-card span {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Order badge text */
@@ -1234,13 +1289,15 @@ html:is(.dark, [data-bs-theme="dark"]) .list-header {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .list-header h3 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .list-header select {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .list-card {
@@ -1254,7 +1311,8 @@ html:is(.dark, [data-bs-theme="dark"]) .list-card:hover {
 
 html:is(.dark, [data-bs-theme="dark"]) .list-card-question,
 html:is(.dark, [data-bs-theme="dark"]) .list-card-content p {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .list-card-meta {
@@ -1277,7 +1335,8 @@ html:is(.dark, [data-bs-theme="dark"]) .delete-modal-overlay .delete-modal {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .delete-modal h4 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .delete-modal p {
@@ -1286,12 +1345,14 @@ html:is(.dark, [data-bs-theme="dark"]) .delete-modal p {
 
 html:is(.dark, [data-bs-theme="dark"]) .delete-card-preview {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .btn-cancel {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .btn-cancel:hover {
@@ -1306,7 +1367,8 @@ html:is(.dark, [data-bs-theme="dark"]) .stats-grid .stat-card:not(.primary) {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .stats-grid .stat-card:not(.primary) .stat-value {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .stats-grid .stat-card:not(.primary) .stat-label {
@@ -1330,7 +1392,8 @@ html:is(.dark, [data-bs-theme="dark"]) .overview-cards .overview-card {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .overview-card .overview-value {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .overview-card .overview-label {
@@ -1349,7 +1412,8 @@ html:is(.dark, [data-bs-theme="dark"]) .search-filter i {
 
 html:is(.dark, [data-bs-theme="dark"]) .search-input {
   background: transparent !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .search-input::placeholder {
@@ -1359,7 +1423,8 @@ html:is(.dark, [data-bs-theme="dark"]) .search-input::placeholder {
 html:is(.dark, [data-bs-theme="dark"]) .sort-control select {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .trend-list-header {
@@ -1377,7 +1442,8 @@ html:is(.dark, [data-bs-theme="dark"]) .trend-item:hover {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .trend-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .trend-subject {
@@ -1400,7 +1466,8 @@ html:is(.dark, [data-bs-theme="dark"]) .hot-item:hover {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .hot-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .hot-tag {
@@ -1429,7 +1496,8 @@ html:is(.dark, [data-bs-theme="dark"]) .rtbl-row:hover {
 html:is(.dark, [data-bs-theme="dark"]) .rtbl-name,
 html:is(.dark, [data-bs-theme="dark"]) .rtbl-accuracy,
 html:is(.dark, [data-bs-theme="dark"]) .rtbl-date {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* AnalyticsView - Delta badges */
@@ -1464,7 +1532,8 @@ html:is(.dark, [data-bs-theme="dark"]) .sidebar-header {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .history-item {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .history-item:hover {
@@ -1499,7 +1568,8 @@ html:is(.dark, [data-bs-theme="dark"]) .chat-container {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .welcome-section h1 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .welcome-subtitle {
@@ -1521,7 +1591,8 @@ html:is(.dark, [data-bs-theme="dark"]) .feature-box i {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .feature-box span {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* EssayAnalysisView - Input area */
@@ -1539,7 +1610,8 @@ html:is(.dark, [data-bs-theme="dark"]) .input-container:focus-within {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .input-container textarea {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   background: transparent !important;
 }
 
@@ -1557,11 +1629,13 @@ html:is(.dark, [data-bs-theme="dark"]) .message-row {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .message-sender {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .message-text {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* EssayAnalysisView - Error banner dark mode */
@@ -1580,7 +1654,8 @@ html:is(.dark, [data-bs-theme="dark"]) .auto-distribute-modal {
 
 html:is(.dark, [data-bs-theme="dark"]) .saving-title,
 html:is(.dark, [data-bs-theme="dark"]) .ad-modal-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .saving-subtitle,
@@ -1601,11 +1676,13 @@ html:is(.dark, [data-bs-theme="dark"]) .ad-input-wrapper {
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-input {
   background: transparent !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-input-label {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-result-section {
@@ -1617,7 +1694,8 @@ html:is(.dark, [data-bs-theme="dark"]) .ad-result-label {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-result-value {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-message {
@@ -1626,7 +1704,8 @@ html:is(.dark, [data-bs-theme="dark"]) .ad-message {
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-btn-secondary {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   border-color: var(--border) !important;
 }
 
@@ -1635,7 +1714,8 @@ html:is(.dark, [data-bs-theme="dark"]) .ad-close-btn {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .ad-close-btn:hover {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* General loading states */
@@ -1662,12 +1742,14 @@ html:is(.dark, [data-bs-theme="dark"]) .modal-header {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .modal-header .modal-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .modal-body {
   background: var(--surface) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .modal-footer {
@@ -1681,7 +1763,8 @@ html:is(.dark, [data-bs-theme="dark"]) .btn-close {
 
 /* Analytics header text */
 html:is(.dark, [data-bs-theme="dark"]) .analytics-header h2 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .header-subtitle {
@@ -1699,7 +1782,8 @@ html:is(.dark, [data-bs-theme="dark"]) .pagination-info {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .page-info {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Review header in flashcard view */
@@ -1709,7 +1793,8 @@ html:is(.dark, [data-bs-theme="dark"]) .review-header {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .progress-text {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .progress-bar {
@@ -1756,7 +1841,8 @@ html:is(.dark, [data-bs-theme="dark"]) .exam-form {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .form-label {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .form-label svg {
@@ -1767,7 +1853,8 @@ html:is(.dark, [data-bs-theme="dark"]) .form-input,
 html:is(.dark, [data-bs-theme="dark"]) .form-textarea {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .form-input::placeholder,
@@ -1800,7 +1887,8 @@ html:is(.dark, [data-bs-theme="dark"]) .btn-cancel {
 
 html:is(.dark, [data-bs-theme="dark"]) .btn-cancel:hover {
   background: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* ===== PRACTICE VIEW EXAM LIST CARDS ===== */
@@ -1815,7 +1903,8 @@ html:is(.dark, [data-bs-theme="dark"]) .exam-item:hover {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .exam-name {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .exam-meta {
@@ -1823,7 +1912,8 @@ html:is(.dark, [data-bs-theme="dark"]) .exam-meta {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .section-header h3 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Practice Mode Cards */
@@ -1846,7 +1936,8 @@ html:is(.dark, [data-bs-theme="dark"]) .bookmark-card:hover {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .mode-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .mode-desc {
@@ -1864,7 +1955,8 @@ html:is(.dark, [data-bs-theme="dark"]) .question-item:hover {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .question-text {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .question-subject {
@@ -1880,7 +1972,8 @@ html:is(.dark, [data-bs-theme="dark"]) .tabs button {
 
 html:is(.dark, [data-bs-theme="dark"]) .tabs button:hover {
   background: var(--surface) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .tabs button.active {
@@ -1938,7 +2031,8 @@ html:is(.dark, [data-bs-theme="dark"]) .subject-badge {
 /* ===== TOOLBAR BUTTONS ===== */
 html:is(.dark, [data-bs-theme="dark"]) .toolbar-btn-secondary {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   border-color: var(--border) !important;
 }
 
@@ -2029,7 +2123,8 @@ html:is(.dark, [data-bs-theme="dark"]) .wrong-msg {
 /* btn-secondary */
 html:is(.dark, [data-bs-theme="dark"]) .btn-secondary {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   border-color: var(--border) !important;
 }
 
@@ -2049,7 +2144,8 @@ html:is(.dark, [data-bs-theme="dark"]) .dialog-header {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .dialog-header h3 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .dialog-body {
@@ -2069,7 +2165,8 @@ html:is(.dark, [data-bs-theme="dark"]) .chat-panel-header {
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .chat-panel-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .chat-icon {
@@ -2079,7 +2176,8 @@ html:is(.dark, [data-bs-theme="dark"]) .chat-icon {
 
 /* 2. Question View Meta Tags */
 html:is(.dark, [data-bs-theme="dark"]) .question-meta .meta-tag {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .meta-tag.subject {
@@ -2113,7 +2211,8 @@ html:is(.dark, [data-bs-theme="dark"]) .meta-tag.difficulty.hard {
 
 /* 3. Analytics Header Font */
 html:is(.dark, [data-bs-theme="dark"]) .analytics-header h2 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 4. Landing Page Stats Section */
@@ -2180,7 +2279,8 @@ html:is(.dark, [data-bs-theme="dark"]) .mock-exam-content,
 html:is(.dark, [data-bs-theme="dark"]) .mock-exam-card {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 2. AI Essay Welcome Section */
@@ -2226,7 +2326,8 @@ html:is(.dark, [data-bs-theme="dark"]) .toolbar-btn-secondary,
 html:is(.dark, [data-bs-theme="dark"]) .action-btn-secondary {
   background: var(--surface-muted) !important;
   border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .toolbar-btn-secondary:hover {
@@ -2251,13 +2352,15 @@ html:is(.dark, [data-bs-theme="dark"]) .search-control {
 html:is(.dark, [data-bs-theme="dark"]) .list-header-actions,
 html:is(.dark, [data-bs-theme="dark"]) .select-all-label {
   background: transparent !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 5. Analytics Header Visibility */
 html:is(.dark, [data-bs-theme="dark"]) .analytics-header h2,
 html:is(.dark, [data-bs-theme="dark"]) .analytics-title {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   background: transparent !important;
   /* Ensure no white bg behind text */
 }
@@ -2274,7 +2377,8 @@ html:is(.dark, [data-bs-theme="dark"]) textarea,
 html:is(.dark, [data-bs-theme="dark"]) select {
   background: var(--surface-muted) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) input::placeholder,
@@ -2287,12 +2391,14 @@ html:is(.dark, [data-bs-theme="dark"]) textarea::placeholder {
 /* 1. List Header Actions (Select All Bar) */
 html:is(.dark, [data-bs-theme="dark"]) .list-header-actions {
   background: var(--primary-soft) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   border-bottom: 1px solid var(--border) !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .list-header-actions .select-all-label {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* 2. Admin Tag Management - White Table/Cards */
@@ -2301,7 +2407,8 @@ html:is(.dark, [data-bs-theme="dark"]) .tag-admin .tag-table,
 html:is(.dark, [data-bs-theme="dark"]) .tag-filters .filter-input {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .table-header {
@@ -2353,19 +2460,21 @@ html:is(.dark, [data-bs-theme="dark"]) .quiz-header input,
 html:is(.dark, [data-bs-theme="dark"]) .quiz-tools input {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .question-header .btn-light {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* ===== ROUND 5 FIXES [2026-01-02 22:05] ===== */
 
 /* 1. Analytics Badges (Hot Count & Rank Badges) */
-/* Targeted fix for "X 1 æ¬? badge being white */
+/* Targeted fix for "X 1 ï¿½? badge being white */
 html:is(.dark, [data-bs-theme="dark"]) .hot-count {
   background: var(--surface-muted) !important;
   color: var(--text-secondary) !important;
@@ -2395,7 +2504,8 @@ html:is(.dark, [data-bs-theme="dark"]) .no-questions-warning {
 html:is(.dark, [data-bs-theme="dark"]) .source-checkbox {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .source-checkbox:hover {
@@ -2415,11 +2525,13 @@ html:is(.dark, [data-bs-theme="dark"]) .dialog-footer {
 html:is(.dark, [data-bs-theme="dark"]) .dialog-header {
   background: var(--surface) !important;
   border-bottom-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme="dark"]) .dialog-header h3 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 /* Ensure no weird hover effects on the header container itself */
@@ -2450,7 +2562,8 @@ html:is(.dark, [data-bs-theme="dark"]) .wrong-card .card-header,
 html:is(.dark, [data-bs-theme="dark"]) .card-header {
   background: transparent !important;
   border-bottom: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   /* Remove any border-radius conflict if present */
   border-radius: 0 !important;
 }
@@ -2784,7 +2897,8 @@ html:is(.dark, [data-bs-theme="dark"]) .hero-badge {
 /* ===== LOGIN MODAL DARK MODE ===== */
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .modal-content {
   background: var(--surface) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
   border: 1px solid var(--border) !important;
 }
 
@@ -2793,7 +2907,8 @@ html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .modal-header {
 }
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .modal-header h2 {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .btn-close {
@@ -2802,7 +2917,8 @@ html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .btn-close {
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .btn-close:hover {
   background: var(--surface-muted) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .auth-tabs {
@@ -2814,7 +2930,8 @@ html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .tab-btn {
 }
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .tab-btn:hover {
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .tab-btn.active {
@@ -2842,7 +2959,8 @@ html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .form-group label {
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .form-input {
   background: var(--surface) !important;
   border-color: var(--border) !important;
-  color: var(--text-primary) !important;
+\ \ color:\ var\(--text-primary\)\ !important;
+\ \ border-radius:\ 10px\ !important;
 }
 
 html:is(.dark, [data-bs-theme=\"dark\"]) .modal-overlay .form-input:focus {

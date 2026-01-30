@@ -760,21 +760,26 @@ defineExpose({ selectedIds, clearSelection })
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 6px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
 }
 
 .search-badge-difficulty.easy {
-  background: #D1FAE5;
+  background: #A7F3D0;
   color: #065F46;
+  border-color: #34D399;
 }
 
 .search-badge-difficulty.medium {
-  background: #FEF3C7;
+  background: #FCD34D;
   color: #92400E;
+  border-color: #D97706;
 }
 
 .search-badge-difficulty.hard {
-  background: #FEE2E2;
+  background: #FCA5A5;
   color: #991B1B;
+  border-color: #EF4444;
 }
 
 .search-badge-status {

@@ -215,7 +215,9 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import tagService from '@/services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import questionService from '@/services/questionService'
+import { useQuestionDetailStore } from '@/stores/questionDetailStore'
 
 const props = defineProps({
   questions: { type: Array, required: true }, // examQuestions list
@@ -236,11 +238,13 @@ const selectedQuestionIds = ref([...props.preselectedIds])
 const selectedPendingIndices = ref([...props.preselectedPendingIds])
 const processing = ref(false)
 const newTagName = ref('')
+const tagStore = useTagStore()
+const questionDetailStore = useQuestionDetailStore()
 
 onMounted(async () => {
   console.log('BulkTagEditor mounted. preselectedIds=', props.preselectedIds)
   try {
-    const res = await tagService.getTags()
+    const res = await tagStore.getTags()
     let items = res.data?.results || res.data
     if (!Array.isArray(items)) items = []
     tagOptions.value = items
@@ -305,6 +309,7 @@ const handleCreateTag = async () => {
       selectedTags.value.push(createdTag)
     }
     
+    tagStore.clearCache()
     newTagName.value = ''
   } catch (err) {
     console.error('建立標籤失敗:', err)
@@ -360,8 +365,7 @@ const apply = async () => {
       const id = getId(q)
       let currentQuestion = q.questionDetail
       if (!currentQuestion) {
-        const res = await questionService.getQuestion(id)
-        currentQuestion = res.data
+        currentQuestion = await questionDetailStore.getQuestion(id)
       }
       const currentTagIds = currentQuestion.tags ? currentQuestion.tags.map(t => t.id) : []
       const tagIdsToModify = selectedTags.value.map(t => t.id)

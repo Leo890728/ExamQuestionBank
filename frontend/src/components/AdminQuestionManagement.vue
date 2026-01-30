@@ -54,7 +54,7 @@
       @clear="clearPendingQuestions"
       @save="savePendingQuestions"
       @open-bulk-tag="openBulkTagModalForPending"
-      @open-bulk-subject="openBulkSubjectModalForPending"
+      @open-bulk-meta="openBulkMetaModalForPending"
     />
 
     <!-- Question List using AdminDataList -->
@@ -77,7 +77,7 @@
       @size-change="handleSizeChange"
       @open-add-to-exam="openAddToExamModal"
       @open-bulk-tag="openBulkTagModal"
-      @open-bulk-subject="openBulkSubjectModal"
+      @open-bulk-meta="openBulkMetaModal"
       @delete-selected="deleteSelectedQuestions"
     />
 
@@ -241,11 +241,11 @@
       :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []" @close="closeBulkTagModal"
       @applied="handleBulkTagsApplied" />
 
-    <BulkSubjectEditor v-if="showBulkSubjectModal" :questions="bulkEditMode === 'list' ? questions : []"
+    <BulkQuestionMetaEditor v-if="showBulkMetaModal" :questions="bulkEditMode === 'list' ? questions : []"
       :pendingQuestions="bulkEditMode === 'pending' ? pendingQuestions : []"
       :preselectedIds="bulkEditMode === 'list' ? selectedIds : []"
-      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []" @close="closeBulkSubjectModal"
-      @applied="handleBulkSubjectApplied" />
+      :preselectedPendingIds="bulkEditMode === 'pending' ? selectedPendingIds : []" @close="closeBulkMetaModal"
+      @applied="handleBulkMetaApplied" />
 
     <!-- Delete Confirmation Modal -->
     <div v-if="isDeleteConfirmModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
@@ -302,17 +302,18 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import questionService from '@/services/questionService'
+import { useQuestionDetailStore } from '@/stores/questionDetailStore'
 import examService from '@/services/examService'
 import QuestionEditor from '@/components/QuestionEditor.vue'
 import BulkTagEditor from '@/components/BulkTagEditor.vue'
-import BulkSubjectEditor from '@/components/BulkSubjectEditor.vue'
+import BulkQuestionMetaEditor from '@/components/BulkQuestionMetaEditor.vue'
 import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
 import PendingQuestionsPanel from '@/components/PendingQuestionsPanel.vue'
 import QuestionListPanel from '@/components/QuestionListPanel.vue'
 import QuestionImportModal from '@/components/QuestionImportModal.vue'
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
-import tagService from '@/services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import { QuestionModel } from '@/models/Question'
 
 const questions = ref([])
@@ -344,6 +345,7 @@ const selectedIds = ref([])
 const pendingPanelRef = ref(null)
 const importModalRef = ref(null)
 const activeTab = ref('list')
+const questionDetailStore = useQuestionDetailStore()
 
 const isEditorVisible = ref(false)
 const currentQuestion = ref(null)
@@ -369,17 +371,18 @@ const isLoadingExams = ref(false)
 const isAddingToExam = ref(false)
 const isDeleting = ref(false)
 const showBulkTagModal = ref(false)
-const showBulkSubjectModal = ref(false)
-const bulkEditMode = ref('list') // 'list' or 'pending' - 標籤/科目批次編輯來源
+const showBulkMetaModal = ref(false)
+const bulkEditMode = ref('list') // 'list' or 'pending' - 批次編輯來源
+const tagStore = useTagStore()
 
 const openBulkTagModal = () => {
   bulkEditMode.value = 'list'
   showBulkTagModal.value = true
 }
 
-const openBulkSubjectModal = () => {
+const openBulkMetaModal = () => {
   bulkEditMode.value = 'list'
-  showBulkSubjectModal.value = true
+  showBulkMetaModal.value = true
 }
 
 const openBulkTagModalForPending = () => {
@@ -387,9 +390,9 @@ const openBulkTagModalForPending = () => {
   showBulkTagModal.value = true
 }
 
-const openBulkSubjectModalForPending = () => {
+const openBulkMetaModalForPending = () => {
   bulkEditMode.value = 'pending'
-  showBulkSubjectModal.value = true
+  showBulkMetaModal.value = true
 }
 
 const closeBulkTagModal = () => {
@@ -397,8 +400,8 @@ const closeBulkTagModal = () => {
   bulkEditMode.value = 'list'
 }
 
-const closeBulkSubjectModal = () => {
-  showBulkSubjectModal.value = false
+const closeBulkMetaModal = () => {
+  showBulkMetaModal.value = false
   bulkEditMode.value = 'list'
 }
 
@@ -550,7 +553,7 @@ const handleSizeChange = (size) => {
 // load tags
 const loadTags = async () => {
   try {
-    const res = await tagService.getTags()
+    const res = await tagStore.getTags()
     let items = res.data?.results || res.data
     if (!Array.isArray(items)) items = []
     tagOptions.value = items.filter(t => t != null)
@@ -580,7 +583,7 @@ const openEditQuestion = async (id) => {
     isEditorVisible.value = true
     saving.value = false
     currentQuestion.value = null
-    const { data } = await questionService.getQuestion(id)
+    const data = await questionDetailStore.getQuestion(id)
     currentQuestion.value = data
   } catch (err) {
     console.error('Load question failed', err)
@@ -594,11 +597,24 @@ const openCreateQuestion = () => { currentQuestion.value = null; isEditorVisible
 const closeEditor = () => { isEditorVisible.value = false; currentQuestion.value = null; saving.value = false }
 
 const handleSave = async ({ questionData }) => {
+  // If editing a pending question, save it back to pending list only
+  if (editingPendingIndex.value !== null) {
+    pendingQuestions.value[editingPendingIndex.value] = toPendingQuestion(questionData)
+    alert('暫存題目已更新')
+    editingPendingIndex.value = null
+    closeEditor()
+    return
+  }
   // This is called when editing existing question
   try {
     saving.value = true
     if (currentQuestion.value && currentQuestion.value.id) {
       await questionService.updateQuestion(currentQuestion.value.id, questionData)
+      questionDetailStore.setQuestion({
+        ...currentQuestion.value,
+        ...questionData,
+        id: currentQuestion.value.id
+      })
       alert('題目已更新')
     } else {
       await questionService.createQuestion(questionData)
@@ -840,7 +856,7 @@ const confirmDelete = async () => {
   }
 }
 
-// Handlers for Bulk Tag/Subject modals
+// Handlers for Bulk Tag/Meta modals
 const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
   let totalUpdated = successCount
 
@@ -870,7 +886,7 @@ const handleBulkTagsApplied = ({ successCount, errors, pendingUpdates }) => {
   }
 }
 
-const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
+const handleBulkMetaApplied = ({ successCount, errors, pendingUpdates }) => {
   let totalUpdated = successCount
 
   // 處理暫存題目更新
@@ -885,6 +901,15 @@ const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
           if (update.category !== undefined) {
             pendingQuestions.value[update.index].category = update.category
           }
+          if (update.year !== undefined) {
+            pendingQuestions.value[update.index].year = update.year
+          }
+          if (update.source !== undefined) {
+            pendingQuestions.value[update.index].source = update.source
+          }
+          if (update.difficulty !== undefined) {
+            pendingQuestions.value[update.index].difficulty = update.difficulty
+          }
           totalUpdated++
         }
       }
@@ -894,7 +919,7 @@ const handleBulkSubjectApplied = ({ successCount, errors, pendingUpdates }) => {
   if (totalUpdated > 0) alert(`已更新 ${totalUpdated} 題科目與分類`)
   if (errors && errors.length > 0) alert(`有 ${errors.length} 題更新失敗，請查看 console`)
 
-  closeBulkSubjectModal()
+  closeBulkMetaModal()
   if (bulkEditMode.value === 'pending') {
     resetPendingSelection()
   } else {
@@ -1378,6 +1403,11 @@ defineExpose({
   background: #0f172a;
   color: var(--text-primary-dark, #f1f5f9);
   box-shadow: none;
+}
+
+:root[data-theme="dark"] .filter-select,
+.dark .filter-select {
+  border-radius: 10px !important;
 }
 
 :root[data-theme="dark"] .modern-modal,

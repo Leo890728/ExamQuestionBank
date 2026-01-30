@@ -662,21 +662,26 @@ defineExpose({
 
 .badge-difficulty {
     padding: 4px 10px;
+    border: 1px solid transparent;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
 }
 
 .badge-difficulty.easy {
-    background: #D1FAE5;
+    background: #A7F3D0;
     color: #065F46;
+    border-color: #34D399;
 }
 
 .badge-difficulty.medium {
-    background: #FEF3C7;
+    background: #FCD34D;
     color: #92400E;
+    border-color: #D97706;
 }
 
 .badge-difficulty.hard {
-    background: #FEE2E2;
+    background: #FCA5A5;
     color: #991B1B;
+    border-color: #EF4444;
 }
 
 .badge-info {
@@ -993,14 +998,22 @@ defineExpose({
 }
 
 :global(.dark) .badge-type,
-:global(.dark) .tag-more {
+:global(.dark) .tag-more,
+:global(:root[data-theme="dark"]) .badge-type,
+:global(:root[data-theme="dark"]) .tag-more {
     background: var(--surface-muted) !important;
     color: var(--text-secondary) !important;
 }
 
-:global(.dark) .tag-badge {
+:global(.dark) .tag-badge,
+:global(:root[data-theme="dark"]) .tag-badge {
     background: var(--primary-soft) !important;
     color: var(--primary) !important;
+}
+
+:global(.dark) .item-tags,
+:global(:root[data-theme="dark"]) .item-tags {
+    background: transparent !important;
 }
 
 :global(.dark) .dropdown-menu {

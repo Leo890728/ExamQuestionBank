@@ -141,6 +141,43 @@ const questionService = {
   // Get attempts (placeholder - needs table)
   async getAttempts() {
     return { data: [] }
+  },
+
+  // Bulk update questions (admin only)
+  async bulkUpdateQuestions(updates = []) {
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return { data: { results: [] } }
+    }
+
+    const results = []
+
+    for (let i = 0; i < updates.length; i += 1) {
+      const update = updates[i]
+      try {
+        if (!update || update.id === undefined || update.id === null) {
+          throw new Error('id is required')
+        }
+
+        const existing = await this.getQuestion(update.id)
+        if (!existing?.data) {
+          throw new Error('question not found')
+        }
+
+        const merged = { ...existing.data }
+        Object.keys(update).forEach((key) => {
+          if (update[key] !== undefined) {
+            merged[key] = update[key]
+          }
+        })
+
+        await this.updateQuestion(update.id, merged)
+        results.push({ success: true, id: update.id, index: i })
+      } catch (error) {
+        results.push({ success: false, id: update?.id, index: i, errors: error?.message || error })
+      }
+    }
+
+    return { data: { results } }
   }
 }
 
