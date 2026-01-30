@@ -277,12 +277,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import questionService from '@/services/questionService'
 import { useTagStore } from '@/stores/tagStore'
 import QuestionList from '@/components/QuestionList.vue'
 
 const router = useRouter()
+const examStore = useExamStore()
 const tagStore = useTagStore()
 
 // Mock Exam Modal state
@@ -381,7 +382,7 @@ const formatDate = (dateString) => {
 const loadUserExams = async () => {
     loadingExams.value = true
     try {
-        const { data } = await examService.getExams()
+    const { data } = await examStore.getExams()
         // 處理分頁回應 (data.results) 或直接陣列回應
         const exams = Array.isArray(data) ? data : (data?.results || [])
         // 過濾掉 null 或 undefined 的項目
@@ -421,7 +422,7 @@ const deleteExam = async (examId) => {
 
     deletingExamId.value = examId
     try {
-        await examService.deleteExam(examId)
+        await examStore.deleteExam(examId)
         await loadUserExams()
     } catch (error) {
         console.error('刪除考卷失敗:', error)
@@ -608,7 +609,7 @@ const createExam = async () => {
             payload.time_limit = examConfig.value.timeLimit
         }
 
-        const response = await examService.createCustomExam(payload)
+        const response = await examStore.createCustomExam(payload)
 
         // Reset form
         examConfig.value = { name: '', timeLimit: null }
@@ -651,7 +652,7 @@ const openMockExamModal = async () => {
 
     try {
         // Load practice exams (admin + user's own)
-        const res = await examService.getPracticeExams({ page_size: 100 })
+        const res = await examStore.getPracticeExams({ page_size: 100 })
         const exams = res.data?.results || res.data || []
         // Filter to only exams with questions
         availableExams.value = exams.filter(e => (e.question_count || 0) > 0)
@@ -679,7 +680,7 @@ const confirmMockExam = async () => {
 
         for (const examId of selectedExamIdsForMock.value) {
             try {
-                const examRes = await examService.getExam(examId)
+                const examRes = await examStore.getExam(examId)
                 const examQuestions = examRes.data?.exam_questions || []
                 for (const eq of examQuestions) {
                     if (eq.question && !allQuestionIds.includes(eq.question)) {

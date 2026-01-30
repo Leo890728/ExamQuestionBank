@@ -118,11 +118,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import printJS from 'print-js'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import questionService from '@/services/questionService'
 
 const route = useRoute()
 const router = useRouter()
+const examStore = useExamStore()
 
 const exam = ref(null)
 const questions = ref([])
@@ -183,7 +184,7 @@ const loadExam = async () => {
 
     try {
         const examId = route.params.id
-        const { data } = await examService.getExam(examId)
+        const { data } = await examStore.getExam(examId)
         exam.value = data
 
         const examQuestions = data.exam_questions || []

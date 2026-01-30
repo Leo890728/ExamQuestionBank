@@ -303,7 +303,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import questionService from '@/services/questionService'
 import { useQuestionDetailStore } from '@/stores/questionDetailStore'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import QuestionEditor from '@/components/QuestionEditor.vue'
 import BulkTagEditor from '@/components/BulkTagEditor.vue'
 import BulkQuestionMetaEditor from '@/components/BulkQuestionMetaEditor.vue'
@@ -346,6 +346,7 @@ const pendingPanelRef = ref(null)
 const importModalRef = ref(null)
 const activeTab = ref('list')
 const questionDetailStore = useQuestionDetailStore()
+const examStore = useExamStore()
 
 const isEditorVisible = ref(false)
 const currentQuestion = ref(null)
@@ -701,7 +702,7 @@ const closeAddToExamModal = () => {
 const loadAvailableExams = async () => {
   isLoadingExams.value = true
   try {
-    const { data } = await examService.getExams({ pageSize: 100 })
+    const { data } = await examStore.getExams({ pageSize: 100 })
     const list = Array.isArray(data) ? data : data.results || []
     availableExams.value = list
     console.log('Loaded exams:', list)
@@ -723,7 +724,7 @@ const addQuestionsToExam = async () => {
     for (const exam of selectedExams.value) {
       for (let i = 0; i < selectedIds.value.length; i++) {
         const questionId = selectedIds.value[i]
-        await examService.addQuestionToExam(exam.id, {
+        await examStore.addQuestionToExam(exam.id, {
           question: questionId,
           order: i + 1
         })
@@ -764,7 +765,7 @@ const loadAssociatedExams = async (questionId) => {
   isLoadingAssociatedExams.value = true
   try {
     // Use dedicated API endpoint to get exams containing this question
-    const { data } = await examService.getExamsByQuestion(questionId)
+    const { data } = await examStore.getExamsByQuestion(questionId)
     const exams = Array.isArray(data) ? data : data.results || []
     associatedExams.value = exams
     console.log('Associated exams:', exams)
@@ -801,7 +802,7 @@ const deleteSelectedQuestions = async () => {
   // Load affected exams first
   isLoadingAffectedExams.value = true
   try {
-    const response = await examService.getExamsByQuestions(selectedIds.value)
+    const response = await examStore.getExamsByQuestions(selectedIds.value)
     const exams = Array.isArray(response) ? response : response.data ? response.data : []
     console.log('Affected exams:', exams)
     affectedExamsForDelete.value = exams

@@ -159,7 +159,7 @@ import { useRouter } from 'vue-router'
 import questionService from '@/services/questionService'
 import ExamDetailModal from '@/components/ExamDetailModal.vue'
 import { usePdfImportStore } from '@/stores/pdfImport'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import AdminDataList from '@/components/common/AdminDataList.vue'
 
 const emit = defineEmits(['show-import-progress', 'hide-import-progress', 'show-import-result', 'show-export-progress', 'hide-export-progress'])
@@ -185,6 +185,7 @@ const jsonImportInput = ref(null)
 const adminDataListRef = ref(null)
 
 const router = useRouter()
+const examStore = useExamStore()
 const pdfImportStore = usePdfImportStore()
 
 const orderingOptions = [
@@ -250,7 +251,7 @@ const fetchExams = async () => {
         const params = { page: currentPage.value, page_size: pageSize.value }
         if (searchTerm.value.trim()) params.search = searchTerm.value.trim()
         if (ordering.value) params.ordering = ordering.value
-        const { data } = await examService.getExams(params)
+        const { data } = await examStore.getExams(params)
         const list = Array.isArray(data) ? data : data.results ?? []
         exams.value = list.map(normalizeExam)
         if (Array.isArray(data)) {
@@ -301,7 +302,7 @@ const normalizeExamDetail = (exam) => ({
 const viewExam = async (id) => {
     isExamDetailVisible.value = true; isExamDetailLoading.value = true; examDetailError.value = ''; selectedExamDetail.value = null
     try {
-        const { data } = await examService.getExam(id)
+        const { data } = await examStore.getExam(id)
         selectedExamDetail.value = normalizeExamDetail(data)
     } catch (error) {
         examDetailError.value = error.response?.data?.detail || '無法取得考卷詳細資訊。'
@@ -317,7 +318,7 @@ const deleteExam = async (id) => {
     if (!confirm('確定要刪除此考卷嗎？')) return
     deletingExamId.value = id
     try {
-        await examService.deleteExam(id)
+        await examStore.deleteExam(id)
         alert('考卷已刪除')
         await fetchExams()
         if (!exams.value.length && currentPage.value > 1) { currentPage.value -= 1; await fetchExams() }
@@ -333,7 +334,7 @@ const deleteSelectedExams = async () => {
     let successCount = 0, failCount = 0
     for (const id of [...selectedExamIds.value]) {
         try {
-            await examService.deleteExam(id)
+            await examStore.deleteExam(id)
             successCount++
             selectedExamIds.value.splice(selectedExamIds.value.indexOf(id), 1)
         } catch { failCount++ }
@@ -351,7 +352,7 @@ const exportExam = async (examId) => {
     if (exportingExams[examId]) return
     exportingExams[examId] = true
     try {
-        const { data } = await examService.getExam(examId)
+        const { data } = await examStore.getExam(examId)
         const exportItem = { id: data.id, name: data.name, description: data.description, time_limit: data.time_limit, exam_questions: [] }
         if (Array.isArray(data.exam_questions)) {
             for (const eq of data.exam_questions) {
@@ -376,7 +377,7 @@ const exportSelectedExams = async () => {
         const exportData = []
         for (const examId of selectedExamIds.value) {
             try {
-                const { data } = await examService.getExam(examId)
+                const { data } = await examStore.getExam(examId)
                 const examQuestions = (data.exam_questions || []).filter(eq => eq.question).map(eq => ({ question_id: eq.question, order: eq.order, points: eq.points }))
                 exportData.push({ id: data.id, name: data.name, description: data.description, time_limit: data.time_limit, exam_questions: examQuestions })
             } catch { }
@@ -403,14 +404,14 @@ const handleImportFile = async (event) => {
         for (const item of items) {
             if (!item.name) continue
             const examData = { name: item.name, description: item.description || '', time_limit: item.time_limit || null }
-            const res = await examService.createExam(examData)
+            const res = await examStore.createExam(examData)
             const newExamId = res.data?.id
             if (newExamId && Array.isArray(item.exam_questions)) {
                 for (const eq of item.exam_questions) {
                     if (eq.question_id) {
                         try {
                             const exists = await questionService.getQuestion(eq.question_id).catch(() => null)
-                            if (exists?.data) await examService.addQuestionToExam(newExamId, { question: eq.question_id, order: eq.order, points: eq.points })
+                            if (exists?.data) await examStore.addQuestionToExam(newExamId, { question: eq.question_id, order: eq.order, points: eq.points })
                         } catch { }
                     }
                 }

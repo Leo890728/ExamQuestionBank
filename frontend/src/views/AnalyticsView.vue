@@ -315,12 +315,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import ActivityHeatmap from '@/components/charts/ActivityHeatmap.vue'
 import AccuracyTrendChart from '@/components/charts/AccuracyTrendChart.vue'
 import MonthlyPracticeChart from '@/components/charts/MonthlyPracticeChart.vue'
 
 const loading = ref(true)
+const examStore = useExamStore()
 const stats = ref({
   total_answered: 0, correct_answered: 0, total_bank: 0, exam_count: 0,
   average_score: 0, accuracy: 0, accuracy_trend: [], top_wrong: [], wrong_count: 0
@@ -585,10 +586,10 @@ const getAccuracyClass = (accuracy) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const [statsRes, resultsRes] = await Promise.all([
-      examService.getExamStats(),
-      examService.getExamResults()
-    ])
+      const [statsRes, resultsRes] = await Promise.all([
+        examStore.getExamStats(),
+        examStore.getExamResults()
+      ])
     stats.value = statsRes.data
     recentResults.value = resultsRes.data || []
   } catch (error) {

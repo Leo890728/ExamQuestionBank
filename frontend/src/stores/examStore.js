@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import examService from '@/services/examService'
+import { ExamModel } from '@/models/Exam'
 
 export const useExamStore = defineStore('exam', () => {
   // State
@@ -32,44 +34,31 @@ export const useExamStore = defineStore('exam', () => {
     return (answeredQuestions.value.size / totalQuestions.value) * 100
   })
 
+  const getExamTimeLimit = (examData) => {
+    const limit = examData?.timeLimit ?? examData?.time_limit
+    const num = Number(limit)
+    return Number.isFinite(num) && num > 0 ? num : null
+  }
+
+  const normalizeExamForStore = (raw) => {
+    if (!raw) return null
+    return ExamModel.fromRpcDetail(raw)
+  }
+
+  const findCorrectOption = (options = []) => {
+    if (!Array.isArray(options)) return null
+    return options.find((opt) => opt?.isCorrect || opt?.is_correct) || null
+  }
+
   // Actions
   const loadExam = async (examId) => {
     isLoading.value = true
     error.value = null
     try {
-      // This will be implemented when integrating with the actual API
-      // For now, simulate loading with a delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Mock exam data for testing
-      exam.value = {
-        id: examId,
-        name: 'Sample Exam',
-        description: 'This is a sample exam for testing',
-        timeLimit: 30,
-        questions: [
-          {
-            id: '1',
-            order: 1,
-            content: 'What is 2 + 2?',
-            options: [
-              { id: 1, content: '3', isCorrect: false },
-              { id: 2, content: '4', isCorrect: true },
-              { id: 3, content: '5', isCorrect: false }
-            ],
-            subject: 'Math',
-            category: 'Basic'
-          }
-        ],
-        settings: {
-          allowReview: true,
-          showResults: true,
-          randomizeQuestions: false,
-          randomizeOptions: false
-        }
-      }
-      
+      const { data } = await examService.getExam(examId)
+      exam.value = data ? normalizeExamForStore(data) : null
       isLoading.value = false
+      return exam.value
     } catch (err) {
       const errorState = createUserFriendlyError(err)
       error.value = errorState.message
@@ -78,16 +67,23 @@ export const useExamStore = defineStore('exam', () => {
     }
   }
 
-  const startExam = () => {
+  const startExam = async (examId = null) => {
+    if (examId) {
+      await examService.startExam(examId)
+    }
+
     isActive.value = true
     currentQuestionIndex.value = 0
     userAnswers.value = {}
     results.value = null
     error.value = null
-    
+
     // Set timer if exam has time limit
-    if (exam.value?.timeLimit) {
-      timeLeft.value = exam.value.timeLimit * 60 // Convert minutes to seconds
+    const limit = getExamTimeLimit(exam.value)
+    if (limit) {
+      timeLeft.value = limit * 60 // Convert minutes to seconds
+    } else {
+      timeLeft.value = 0
     }
   }
 
@@ -122,13 +118,24 @@ export const useExamStore = defineStore('exam', () => {
     }
   }
 
-  const submitExam = async () => {
+  const submitExam = async ({ persist = false } = {}) => {
     try {
       isActive.value = false
       isLoading.value = true
       
       // Calculate comprehensive results
       results.value = calculateExamResults()
+
+      if (persist && exam.value?.id) {
+        await examService.saveExamResult({
+          exam_id: exam.value.id,
+          score: results.value.score,
+          correct_count: results.value.correctCount,
+          total_count: results.value.totalCount,
+          duration_seconds: results.value.duration,
+          wrong_question_ids: results.value.wrongQuestionIds
+        })
+      }
       
       // Clear localStorage after successful submission
       clearPersistedState()
@@ -168,7 +175,8 @@ export const useExamStore = defineStore('exam', () => {
         const now = new Date()
         const hoursDiff = (now - savedTime) / (1000 * 60 * 60)
         
-        if (hoursDiff < 24) {
+        const sameExam = !state.examId || state.examId === exam.value?.id
+        if (hoursDiff < 24 && sameExam) {
           userAnswers.value = state.userAnswers || {}
           currentQuestionIndex.value = state.currentQuestionIndex || 0
           timeLeft.value = state.timeLeft || 0
@@ -195,7 +203,7 @@ export const useExamStore = defineStore('exam', () => {
     let correct = 0
     exam.value.questions.forEach((question, index) => {
       const userAnswer = userAnswers.value[index]
-      const correctOption = question.options?.find(opt => opt.isCorrect)
+      const correctOption = findCorrectOption(question.options)
       if (userAnswer === correctOption?.id) {
         correct++
       }
@@ -208,7 +216,7 @@ export const useExamStore = defineStore('exam', () => {
     
     return exam.value.questions.map((question, index) => {
       const userAnswer = userAnswers.value[index]
-      const correctOption = question.options?.find(opt => opt.isCorrect)
+      const correctOption = findCorrectOption(question.options)
       const userOption = question.options?.find(opt => opt.id === userAnswer)
       
       return {
@@ -228,7 +236,7 @@ export const useExamStore = defineStore('exam', () => {
     return exam.value.questions
       .filter((question, index) => {
         const userAnswer = userAnswers.value[index]
-        const correctOption = question.options?.find(opt => opt.isCorrect)
+        const correctOption = findCorrectOption(question.options)
         return userAnswer !== correctOption?.id
       })
       .map(question => question.id)
@@ -252,7 +260,8 @@ export const useExamStore = defineStore('exam', () => {
     const totalCount = exam.value.questions.length
     const correctCount = calculateCorrectAnswers()
     const percentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0
-    const duration = exam.value?.timeLimit ? (exam.value.timeLimit * 60) - timeLeft.value : 0
+    const limit = getExamTimeLimit(exam.value)
+    const duration = limit ? (limit * 60) - timeLeft.value : 0
     const details = generateQuestionResults()
     const wrongQuestionIds = getWrongQuestionIds()
 
@@ -272,6 +281,7 @@ export const useExamStore = defineStore('exam', () => {
   const persistExamState = () => {
     try {
       const state = {
+        examId: exam.value?.id ?? null,
         userAnswers: userAnswers.value,
         currentQuestionIndex: currentQuestionIndex.value,
         timeLeft: timeLeft.value,
@@ -380,6 +390,32 @@ export const useExamStore = defineStore('exam', () => {
     createUserFriendlyError,
     handleTimeExpired,
     updateTimeLeft,
-    calculateExamResults
+    calculateExamResults,
+    // Exam API wrappers (use examService under the hood)
+    getExams: (params) => examService.getExams(params),
+    getUserExams: (params) => examService.getUserExams(params),
+    getExam: (examId) => examService.getExam(examId),
+    createExam: (payload) => examService.createExam(payload),
+    updateExam: (examId, payload) => examService.updateExam(examId, payload),
+    deleteExam: (examId) => examService.deleteExam(examId),
+    addQuestionToExam: (examId, payload) => examService.addQuestionToExam(examId, payload),
+    updateExamQuestion: (examId, payload) => examService.updateExamQuestion(examId, payload),
+    removeQuestionFromExam: (examId, examQuestionId) => examService.removeQuestionFromExam(examId, examQuestionId),
+    getPracticeExams: (params) => examService.getPracticeExams(params),
+    getHistoricalExams: (params) => examService.getHistoricalExams(params),
+    saveExamResult: (payload) => examService.saveExamResult(payload),
+    getExamResults: () => examService.getExamResults(),
+    getExamStats: () => examService.getExamStats(),
+    getWrongQuestions: () => examService.getWrongQuestions(),
+    markWrongQuestionReviewed: (id, reviewed) => examService.markWrongQuestionReviewed(id, reviewed),
+    deleteWrongQuestion: (id) => examService.deleteWrongQuestion(id),
+    recordAnswer: (payload) => examService.recordAnswer(payload),
+    getBookmarks: () => examService.getBookmarks(),
+    addBookmark: (questionIds) => examService.addBookmark(questionIds),
+    removeBookmark: (questionId) => examService.removeBookmark(questionId),
+    createCustomExam: (payload) => examService.createCustomExam(payload),
+    getExamsByQuestion: (questionId) => examService.getExamsByQuestion(questionId),
+    getExamsByQuestions: (questionIds) => examService.getExamsByQuestions(questionIds),
+    getTrends: () => examService.getTrends()
   }
 })

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import ResultsActions from './ResultsActions.vue'
 import examService from '@/services/examService'
 import flashcardService from '@/services/flashcardService'
@@ -10,8 +11,20 @@ vi.mock('@/services/flashcardService')
 
 describe('ResultsActions', () => {
   let mockResults
+  let pinia
+
+  const mountWithPinia = (options) => {
+    return mount(ResultsActions, {
+      ...options,
+      global: {
+        plugins: [pinia]
+      }
+    })
+  }
 
   beforeEach(() => {
+    pinia = createPinia()
+    setActivePinia(pinia)
     mockResults = {
       examId: 'exam-123',
       correctCount: 2,
@@ -62,7 +75,7 @@ describe('ResultsActions', () => {
   })
 
   it('displays correct number of wrong questions', () => {
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -71,7 +84,7 @@ describe('ResultsActions', () => {
   })
 
   it('shows bookmark and flashcard actions when there are wrong questions', () => {
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -93,7 +106,7 @@ describe('ResultsActions', () => {
       wrongQuestionIds: []
     }
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: perfectResults }
     })
 
@@ -107,7 +120,7 @@ describe('ResultsActions', () => {
   it('handles bookmark wrong questions action', async () => {
     examService.addBookmark.mockResolvedValue({ success: true })
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -125,7 +138,7 @@ describe('ResultsActions', () => {
   it('handles bookmark error gracefully', async () => {
     examService.addBookmark.mockRejectedValue(new Error('Network error'))
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -143,7 +156,7 @@ describe('ResultsActions', () => {
     const mockFlashcard = { id: 1, question: 'q2' }
     flashcardService.createFlashcard.mockResolvedValue(mockFlashcard)
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -165,7 +178,7 @@ describe('ResultsActions', () => {
   it('handles flashcard creation error gracefully', async () => {
     flashcardService.createFlashcard.mockRejectedValue(new Error('Service unavailable'))
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -180,7 +193,7 @@ describe('ResultsActions', () => {
   })
 
   it('emits retake-exam event when retake button is clicked', async () => {
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { 
         results: mockResults,
         examName: 'Math Quiz'
@@ -198,7 +211,7 @@ describe('ResultsActions', () => {
   })
 
   it('emits return-to-list event when back button is clicked', async () => {
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -211,7 +224,7 @@ describe('ResultsActions', () => {
   it('shows loading states during async operations', async () => {
     examService.addBookmark.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)))
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -225,7 +238,7 @@ describe('ResultsActions', () => {
   it('dismisses error messages when dismiss button is clicked', async () => {
     examService.addBookmark.mockRejectedValue(new Error('Test error'))
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -247,7 +260,7 @@ describe('ResultsActions', () => {
     vi.useFakeTimers()
     examService.addBookmark.mockResolvedValue({ success: true })
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: mockResults }
     })
 
@@ -292,7 +305,7 @@ describe('ResultsActions', () => {
       wrongQuestionIds: []
     }
 
-    const wrapper = mount(ResultsActions, {
+    const wrapper = mountWithPinia({
       props: { results: validResults }
     })
 
