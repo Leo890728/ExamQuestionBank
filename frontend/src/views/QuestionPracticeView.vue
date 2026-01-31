@@ -222,9 +222,9 @@
     <!-- Mobile Overlay Background -->
     <div v-if="isChatOpen" class="mobile-overlay" @click="closeChat"></div>
 
-    <!-- Floating Ask AI Button (Draggable) -->
+    <!-- Floating Ask AI Button (Draggable) - Hidden when CiteRight extension is present -->
     <button
-      v-if="!isChatOpen"
+      v-if="!isChatOpen && !isExtensionPresent"
       class="floating-ai-btn"
       :style="floatingBtnStyle"
       @mousedown="startFloatingDrag"
@@ -485,6 +485,9 @@ const splitRatio = ref(0.6) // Main panel takes 60% by default
 const isDragging = ref(false)
 const minPanelWidth = 300 // Minimum width for each panel in pixels
 
+// Extension detection - hide Ask AI button when CiteRight extension is present
+const isExtensionPresent = ref(false)
+
 // Floating button draggable state
 const floatingBtnPos = ref({ x: null, y: null }) // null means use default position
 const isFloatingDragging = ref(false)
@@ -650,6 +653,11 @@ const stopFloatingDrag = () => {
   }
 }
 
+const openAIChat = (prefillText = '') => {
+    chatPrefill.value = { text: prefillText, stamp: Date.now() }
+    isChatOpen.value = true
+}
+
 const closeChat = () => {
   isChatOpen.value = false
 }
@@ -705,6 +713,21 @@ const retryPractice = () => {
 onMounted(() => {
   loadQuestions()
   window.addEventListener('resize', handleResize)
+  
+  // Detect CiteRight extension by checking for its marker element
+  const checkExtension = () => {
+    const extensionMarker = document.querySelector('#citeright-extension-marker')
+    const extensionBtn = document.querySelector('.floating-sidebar-btn')
+    if (extensionMarker || extensionBtn) {
+      isExtensionPresent.value = true
+      console.log('[QuestionPractice] CiteRight extension detected, hiding Ask AI button')
+    }
+  }
+  
+  // Check immediately and also after a short delay (extension may inject later)
+  checkExtension()
+  setTimeout(checkExtension, 1000)
+  setTimeout(checkExtension, 3000)
 })
 
 onUnmounted(() => {

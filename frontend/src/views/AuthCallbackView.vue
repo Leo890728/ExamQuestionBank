@@ -16,6 +16,55 @@ import { supabase } from '@/lib/supabase'
 
 const router = useRouter()
 
+/**
+ * Notify Precedent extension of successful login via BroadcastChannel
+ */
+function notifyExtensionOfLogin(user, session) {
+  try {
+    // Check if this login was initiated from the extension
+    const urlParams = new URLSearchParams(window.location.search)
+    const source = urlParams.get('source')
+    const localUserId = urlParams.get('local_user_id')
+    
+    if (source === 'precedent_extension') {
+      console.log('🔗 Extension login detected, broadcasting auth success...')
+      
+      // Use BroadcastChannel to notify the extension
+      const channel = new BroadcastChannel('precedent_auth')
+      channel.postMessage({
+        type: 'AUTH_SUCCESS',
+        userId: user.id,
+        email: user.email,
+        displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        accessToken: session.access_token,
+        localUserId: localUserId // The extension's local user ID for linking
+      })
+      
+      // Also store in localStorage for the extension to read via content script
+      localStorage.setItem('precedent_auth_success', JSON.stringify({
+        userId: user.id,
+        email: user.email,
+        displayName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        timestamp: Date.now(),
+        localUserId: localUserId
+      }))
+      
+      console.log('✅ Extension notified of login success')
+      
+      // Close window after short delay if opened by extension
+      setTimeout(() => {
+        channel.close()
+        // If this was a popup, close it
+        if (window.opener) {
+          window.close()
+        }
+      }, 1500)
+    }
+  } catch (err) {
+    console.warn('Could not notify extension:', err)
+  }
+}
+
 onMounted(async () => {
   try {
     const url = new URL(window.location.href)
@@ -55,6 +104,9 @@ onMounted(async () => {
       localStorage.setItem('username', user.user_metadata?.full_name || user.email?.split('@')[0] || 'User')
       localStorage.setItem('user_role', user.user_metadata?.is_admin ? 'admin' : 'user')
       
+      // Notify Precedent extension if this was an extension-initiated login
+      notifyExtensionOfLogin(user, session)
+      
       // Check for intended path
       const intendedPath = sessionStorage.getItem('intended_path')
       sessionStorage.removeItem('intended_path')
@@ -64,8 +116,11 @@ onMounted(async () => {
         window.history.replaceState(null, '', window.location.pathname)
       }
       
-      // Redirect to intended path or practice page
-      router.push(intendedPath || '/practice')
+      // Redirect to intended path or practice page (unless extension popup)
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get('source') !== 'precedent_extension') {
+        router.push(intendedPath || '/practice')
+      }
     } else {
       console.log('No session found after OAuth callback')
       router.push('/')
