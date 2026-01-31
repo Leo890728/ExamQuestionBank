@@ -465,15 +465,18 @@ const addToFlashcard = async () => {
   }
 }
 
-const openAIChat = () => {
+const openAIChat = (customPrefillText = '') => {
   // Open AI chat sidebar instead of navigating
-  const content = currentQuestion.value?.content || ''
-  const optionsText = currentOptions.value.map((o, idx) => `${getOptionLabel(idx)}. ${o.content}`).join('\n')
-  const correct = currentOptions.value.find(o => o.is_correct)
-  const correctIdx = currentOptions.value.indexOf(correct)
-  const correctText = correct ? `${getOptionLabel(correctIdx)}. ${correct.content}` : ''
+  let prefillText = customPrefillText
+  if (!prefillText) {
+    const content = currentQuestion.value?.content || ''
+    const optionsText = currentOptions.value.map((o, idx) => `${getOptionLabel(idx)}. ${o.content}`).join('\n')
+    const correct = currentOptions.value.find(o => o.is_correct)
+    const correctIdx = currentOptions.value.indexOf(correct)
+    const correctText = correct ? `${getOptionLabel(correctIdx)}. ${correct.content}` : ''
 
-  const prefillText = `題目：${content}\n\n選項：\n${optionsText}\n\n正確答案：${correctText}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`
+    prefillText = `題目：${content}\n\n選項：\n${optionsText}\n\n正確答案：${correctText}\n\n請幫我解析這道題目，解釋為什麼正確答案是對的？`
+  }
 
   chatPrefill.value = { text: prefillText, stamp: Date.now() }
   isChatOpen.value = true
@@ -652,11 +655,6 @@ const stopFloatingDrag = () => {
     side,
     snapping: true
   }
-}
-
-const openAIChat = (prefillText = '') => {
-    chatPrefill.value = { text: prefillText, stamp: Date.now() }
-    isChatOpen.value = true
 }
 
 const closeChat = () => {
