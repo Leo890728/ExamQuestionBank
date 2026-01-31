@@ -249,11 +249,12 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import AIChatInterface from '@/components/AIChatInterface.vue'
 
 const route = useRoute()
 const router = useRouter()
+const examStore = useExamStore()
 
 // State
 const isLoading = ref(true)
@@ -395,13 +396,13 @@ const checkAnswer = async () => {
   try {
     if (!isCorrect.value && currentQuestion.value?.id) {
       // This will add to wrong questions if answer is wrong
-      await examService.saveExamResult({
-        exam_id: null, // Single question practice, no exam
-        score: 0,
-        correct_count: 0,
-        total_count: 1,
-        wrong_question_ids: [currentQuestion.value.id]
-      }).catch(() => {}) // Silent fail for practice mode
+        await examStore.saveExamResult({
+          exam_id: null, // Single question practice, no exam
+          score: 0,
+          correct_count: 0,
+          total_count: 1,
+          wrong_question_ids: [currentQuestion.value.id]
+        }).catch(() => {}) // Silent fail for practice mode
     }
   } catch (e) {
     // Silent fail, don't interrupt the practice flow

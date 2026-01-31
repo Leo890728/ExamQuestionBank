@@ -184,11 +184,11 @@
 <script setup>
 import { ref, onMounted, computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useExamStore } from '@/stores/examStore'
 import ExamForm from '../components/ExamForm.vue'
 import QuestionEditor from '../components/QuestionEditor.vue'
 import QuestionList from '../components/QuestionList.vue'
 import AddQuestionModal from '../components/AddQuestionModal.vue'
-import examService from '../services/examService'
 import questionService from '../services/questionService'
 import tagService from '../services/tagService'
 import { usePdfImportStore } from '../stores/pdfImport'
@@ -198,6 +198,8 @@ const currentUser = inject('currentUser', null)
 const route = useRoute()
 const router = useRouter()
 const pdfImportStore = usePdfImportStore()
+
+const examStore = useExamStore()
 
 // 考卷資料
 const exam = ref(null)
@@ -321,7 +323,7 @@ const loadExam = async () => {
   }
 
   try {
-    const response = await examService.getExam(examId.value)
+    const response = await examStore.getExam(examId.value)
     exam.value = response.data
     examQuestions.value = response.data.exam_questions || []
   } catch (error) {
@@ -345,11 +347,11 @@ const handleSaveExam = async (examData) => {
 
     if (currentExamId) {
       // 更新現有考卷
-      const response = await examService.updateExam(currentExamId, examData)
+      const response = await examStore.updateExam(currentExamId, examData)
       exam.value = response.data
     } else {
       // 建立新考卷
-      const response = await examService.createExam(examData)
+      const response = await examStore.createExam(examData)
       exam.value = response.data
       currentExamId = response.data.id
       // 根據使用者角色導向不同頁面
@@ -421,7 +423,7 @@ const handleSaveExam = async (examData) => {
             if (r.success) {
               // Add created question to exam
               try {
-                await examService.addQuestionToExam(currentExamId, {
+                await examStore.addQuestionToExam(currentExamId, {
                   question: r.id,
                   order: m.order,
                   points: m.points
@@ -466,7 +468,7 @@ const handleSaveExam = async (examData) => {
         savingProgressMessage.value = `加入現有題目中 (${i + 1}/${pendingExamLinks.value.length}題)`
 
         try {
-          await examService.addQuestionToExam(currentExamId, {
+          await examStore.addQuestionToExam(currentExamId, {
             question: link.questionId,
             order: link.order !== undefined ? link.order : (currentOrder + i + 1),
             points: link.points || 1
@@ -703,7 +705,7 @@ const applyPendingQuestionEdits = async (currentExamId) => {
 
       if (Object.keys(payload).length > 0) {
         try {
-          await examService.updateExamQuestion(currentExamId, {
+          await examStore.updateExamQuestion(currentExamId, {
             exam_question_id: Number(examQuestionId),
             ...payload
           })
@@ -858,7 +860,7 @@ const handleAddQuestionToExam = async (questionIds, points) => {
 
     for (let i = 0; i < ids.length; i++) {
       try {
-        await examService.addQuestionToExam(examId.value, {
+        await examStore.addQuestionToExam(examId.value, {
           question: ids[i],
           order: currentOrder + i + 1,
           points: points
@@ -939,44 +941,45 @@ const handleAddSearchResultsToExam = async (questionIds, points) => {
 // 載入標籤
 const handleLoadTags = async () => {
   try {
-    const { data } = await api.get('/question_bank/tags/')
-    tags.value = Array.isArray(data) ? data : (data.results || [])
+    const { data } = await tagService.getTags({ limit: 200 })
+    tags.value = Array.isArray(data) ? data : (data?.results || [])
   } catch (error) {
     console.error('載入標籤失敗:', error)
     tags.value = []
   }
 }
-
 // 搜尋題目
 const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
   searchLoading.value = true
   try {
-    const params = {
-      page: page,
+    const { data } = await questionService.getQuestions({
+      subject: filters.subject || null,
+      difficulty: filters.difficulty || null,
+      keyword: filters.search || null,
+      page,
       page_size: pageSize
-    }
+    })
 
-    if (filters.subject) {
-      params.subject = filters.subject
-    }
-    if (filters.difficulty) {
-      params.difficulty = filters.difficulty
-    }
-    if (filters.search) {
-      params.search = filters.search
-    }
-    if (filters.tags && filters.tags.length > 0) {
-      params.tags = filters.tags.map(t => t.id).join(',')
-      params.tag_mode = filters.tag_mode
-    }
+    let results = Array.isArray(data) ? data : (data?.results || [])
+
     if (filters.source) {
-      params.source = filters.source
+      results = results.filter(q => (q.source || '') === filters.source)
     }
 
-    const { data } = await api.get('/question_bank/questions/', { params })
+    if (filters.tags && filters.tags.length > 0) {
+      const selectedTagIds = filters.tags.map(t => t.id)
+      const tagMode = filters.tag_mode === 'and' ? 'and' : 'or'
+      results = results.filter((q) => {
+        const tagIds = Array.isArray(q.tags) ? q.tags.map(tag => tag.id) : []
+        if (tagMode === 'and') {
+          return selectedTagIds.every(id => tagIds.includes(id))
+        }
+        return selectedTagIds.some(id => tagIds.includes(id))
+      })
+    }
 
     // Transform search results to match exam question format
-    searchQuestions.value = (data.results || []).map(q => ({
+    searchQuestions.value = results.map(q => ({
       id: `search-${q.id}`,
       question: q.id,
       question_content: q.content || q.question_content,
@@ -989,7 +992,9 @@ const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
       isSearchResult: true,
       originalQuestion: q
     }))
-    searchTotalCount.value = data.count || 0
+    searchTotalCount.value = (filters.tags && filters.tags.length > 0)
+      ? results.length
+      : (data?.count || results.length)
   } catch (error) {
     console.error('搜尋題目失敗:', error)
     searchQuestions.value = []
@@ -1045,7 +1050,7 @@ const handleRemoveQuestion = async (examQuestionId) => {
       pendingQuestionEdits.value = nextEdits
     }
 
-    await examService.removeQuestionFromExam(examId.value, examQuestionId)
+    await examStore.removeQuestionFromExam(examId.value, examQuestionId)
     alert('題目移除成功')
 
     // 如果移除的是當前選中的題目，清空選擇
@@ -1087,7 +1092,7 @@ const handleBulkRemove = async () => {
           delete nextEdits[id]
           pendingQuestionEdits.value = nextEdits
         }
-        await examService.removeQuestionFromExam(examId.value, id)
+        await examStore.removeQuestionFromExam(examId.value, id)
         successCount++
       }
     } catch (err) {

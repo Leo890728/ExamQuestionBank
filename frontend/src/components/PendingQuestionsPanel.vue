@@ -80,13 +80,15 @@
         <span>批次編輯標籤</span>
       </button>
 
-      <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkSubjectModalForPending" title="批次編輯科目">
+      <button class="toolbar-btn toolbar-btn-secondary" @click="openBulkMetaModalForPending" title="批次編輯欄位">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          <path d="M12 3v18"></path>
+          <path d="M3 12h18"></path>
+          <path d="M7 3h10v4H7z"></path>
+          <path d="M7 17h10v4H7z"></path>
         </svg>
-        <span>批次編輯科目</span>
+        <span>批次編輯</span>
       </button>
 
       <div class="toolbar-divider"></div>
@@ -136,7 +138,7 @@ const emit = defineEmits([
   'clear',
   'save',
   'open-bulk-tag',
-  'open-bulk-subject'
+  'open-bulk-meta'
 ])
 
 const pendingDataListRef = ref(null)
@@ -231,8 +233,8 @@ const openBulkTagModalForPending = () => {
   emit('open-bulk-tag')
 }
 
-const openBulkSubjectModalForPending = () => {
-  emit('open-bulk-subject')
+const openBulkMetaModalForPending = () => {
+  emit('open-bulk-meta')
 }
 
 defineExpose({

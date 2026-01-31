@@ -470,10 +470,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import questionService from '@/services/questionService'
 import flashcardService from '@/services/flashcardService'
-import tagService from '@/services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import AIChatInterface from '@/components/AIChatInterface.vue'
 import QuestionList from '@/components/QuestionList.vue'
 import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
@@ -484,6 +484,8 @@ import 'vue-multiselect/dist/vue-multiselect.min.css'
 
 const router = useRouter()
 const route = useRoute()
+const examStore = useExamStore()
+const tagStore = useTagStore()
 // route-based tab, default to exams
 const currentTab = computed(() => {
     const t = route.query.tab
@@ -685,7 +687,7 @@ const batchWrongQuiz = (selectedIds) => {
 const batchMarkReviewedFromWrong = async (selectedIds) => {
     if (!selectedIds || selectedIds.length === 0) return
     try {
-        const promises = selectedIds.map(id => examService.markWrongQuestionReviewed(id))
+        const promises = selectedIds.map(id => examStore.markWrongQuestionReviewed(id))
         await Promise.all(promises)
         wrongQuestions.value = wrongQuestions.value.filter(wq => !selectedIds.includes(wq.id))
         alert(`成功標記 ${selectedIds.length} 題已複習！`)
@@ -714,7 +716,7 @@ const batchRemoveBookmarks = async (selectedIds) => {
             .filter(bm => selectedIds.includes(bm.id))
             .map(bm => bm.question)
         
-        const promises = questionIds.map(qid => examService.removeBookmark(qid))
+        const promises = questionIds.map(qid => examStore.removeBookmark(qid))
         await Promise.all(promises)
         bookmarks.value = bookmarks.value.filter(bm => !selectedIds.includes(bm.id))
         alert(`成功移除 ${questionIds.length} 個收藏！`)
@@ -733,10 +735,10 @@ const loadData = async () => {
 
     try {
         const [statsRes, examsRes, wrongRes, bookmarkRes] = await Promise.all([
-            examService.getExamStats().catch(() => ({ data: {} })),
-            examService.getPracticeExams({ page_size: 100 }).catch(() => ({ data: [] })),
-            examService.getWrongQuestions().catch(() => ({ data: [] })),
-            examService.getBookmarks().catch(() => ({ data: [] }))
+            examStore.getExamStats().catch(() => ({ data: {} })),
+            examStore.getPracticeExams({ page_size: 100 }).catch(() => ({ data: [] })),
+            examStore.getWrongQuestions().catch(() => ({ data: [] })),
+            examStore.getBookmarks().catch(() => ({ data: [] }))
         ])
         Object.assign(stats, statsRes.data || {})
         practiceExams.value = Array.isArray(examsRes.data) ? examsRes.data : examsRes.data?.results || []
@@ -754,7 +756,7 @@ const loadData = async () => {
 // Load tags for search filter
 const loadTags = async () => {
     try {
-        const res = await tagService.getTags()
+        const res = await tagStore.getTags()
         let items = res.data?.results || res.data
         if (!Array.isArray(items)) items = []
         tagOptions.value = items.filter(t => t != null)
@@ -971,10 +973,10 @@ const batchAddToBookmark = async () => {
             return
         }
 
-        await examService.addBookmark(questionsToAdd)
+        await examStore.addBookmark(questionsToAdd)
 
         // Refresh bookmarks list
-        const bookmarkRes = await examService.getBookmarks().catch(() => ({ data: [] }))
+        const bookmarkRes = await examStore.getBookmarks().catch(() => ({ data: [] }))
         bookmarks.value = bookmarkRes.data || []
 
         const skipped = selectedQuestionIds.value.length - questionsToAdd.length
@@ -1033,7 +1035,7 @@ const batchMarkReviewed = async () => {
         for (const qId of selectedQuestionIds.value) {
             const wq = wrongQsInMem.find(w => w.question === qId || w.id === qId) // handle both cases just in case
             if (wq) {
-                promises.push(examService.markWrongQuestionReviewed(wq.id))
+                promises.push(examStore.markWrongQuestionReviewed(wq.id))
             }
         }
 
@@ -1041,7 +1043,7 @@ const batchMarkReviewed = async () => {
             await Promise.all(promises)
 
             // Refresh wrong questions list
-            const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+            const wrongRes = await examStore.getWrongQuestions().catch(() => ({ data: [] }))
             wrongQuestions.value = wrongRes.data || []
 
             // Also refresh search results to remove Reviewed ones if in wrong mode
@@ -1071,7 +1073,7 @@ const openAddToExamModal = async () => {
 
     try {
         // Load user's exams
-        const res = await examService.getExams({ page_size: 100 })
+        const res = await examStore.getExams({ page_size: 100 })
         const exams = res.data?.results || res.data || []
         console.log('Loaded exams for add modal:', exams)
         // Show all exams the user has access to
@@ -1113,7 +1115,7 @@ const batchAddToExams = async () => {
 
     try {
         // First, fetch details of each selected exam to get existing question IDs
-        const examDetailsPromises = selectedExamIds.value.map(id => examService.getExam(id))
+        const examDetailsPromises = selectedExamIds.value.map(id => examStore.getExam(id))
         const examDetailsResponses = await Promise.all(examDetailsPromises)
 
         // Build a map of examId -> Set of existing question IDs
@@ -1144,7 +1146,7 @@ const batchAddToExams = async () => {
                 }
 
                 try {
-                    await examService.addQuestionToExam(examId, { question: questionId })
+                    await examStore.addQuestionToExam(examId, { question: questionId })
                     totalAdded++
                 } catch (e) {
                     // May fail for other reasons
@@ -1323,14 +1325,14 @@ const checkAnswer = async () => {
 
     // Record answer
     try {
-        await examService.recordAnswer({
+        await examStore.recordAnswer({
             question: currentQuestion.value.id,
             selected_option: selectedAnswer.value,
             is_correct: isCorrect.value
         })
         // Refresh wrong questions if answer was wrong
         if (!isCorrect.value) {
-            const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+            const wrongRes = await examStore.getWrongQuestions().catch(() => ({ data: [] }))
             wrongQuestions.value = wrongRes.data || []
         }
     } catch (e) {
@@ -1372,9 +1374,9 @@ const addToFlashcard = async (questionId) => {
     try {
         await flashcardService.createFlashcard({ question: questionId })
         // Refresh data to update is_in_flashcard status
-        const bookmarkRes = await examService.getBookmarks().catch(() => ({ data: [] }))
+        const bookmarkRes = await examStore.getBookmarks().catch(() => ({ data: [] }))
         bookmarks.value = bookmarkRes.data || []
-        const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+        const wrongRes = await examStore.getWrongQuestions().catch(() => ({ data: [] }))
         wrongQuestions.value = wrongRes.data || []
     } catch (e) {
         const errorMsg = e.message || ''
@@ -1395,9 +1397,9 @@ const removeFromFlashcard = async (questionId) => {
         if (flashcard) {
             await flashcardService.deleteFlashcard(flashcard.id)
             // Refresh data to update is_in_flashcard status
-            const bookmarkRes = await examService.getBookmarks().catch(() => ({ data: [] }))
+            const bookmarkRes = await examStore.getBookmarks().catch(() => ({ data: [] }))
             bookmarks.value = bookmarkRes.data || []
-            const wrongRes = await examService.getWrongQuestions().catch(() => ({ data: [] }))
+            const wrongRes = await examStore.getWrongQuestions().catch(() => ({ data: [] }))
             wrongQuestions.value = wrongRes.data || []
         } else {
             alert('找不到對應的快閃卡')
@@ -1428,7 +1430,7 @@ const addCurrentToFlashcard = () => {
 
 const markReviewed = async (wrongQuestionId) => {
     try {
-        await examService.markWrongQuestionReviewed(wrongQuestionId)
+        await examStore.markWrongQuestionReviewed(wrongQuestionId)
         wrongQuestions.value = wrongQuestions.value.filter(wq => wq.id !== wrongQuestionId)
     } catch (e) {
         console.error('Failed to mark as reviewed:', e)
@@ -1437,7 +1439,7 @@ const markReviewed = async (wrongQuestionId) => {
 
 const removeBookmark = async (questionId) => {
     try {
-        await examService.removeBookmark(questionId)
+        await examStore.removeBookmark(questionId)
         bookmarks.value = bookmarks.value.filter(bm => bm.question !== questionId)
     } catch (e) {
         console.error('Failed to remove bookmark:', e)

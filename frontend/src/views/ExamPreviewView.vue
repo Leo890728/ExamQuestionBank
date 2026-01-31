@@ -236,7 +236,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useExamStore } from '@/stores/examStore'
-import examService from '@/services/examService'
 import questionService from '@/services/questionService'
 
 // Import components
@@ -379,7 +378,7 @@ const loadExam = async () => {
   errorMessage.value = ''
   
   try {
-    const { data } = await examService.getExam(route.params.id)
+    const { data } = await examStore.getExam(route.params.id)
     exam.value = data
     await loadAllQuestionDetails()
     
@@ -419,7 +418,7 @@ const handleStartExam = async () => {
   showResults.value = false
   
   try {
-    await examService.startExam(exam.value.id)
+    await examStore.startExam(exam.value.id)
     launchQuiz()
   } catch (err) {
     const friendlyError = createUserFriendlyError(err)
@@ -555,7 +554,7 @@ const submitExam = async (autoSubmit = false) => {
 // Separate function to save results to backend (non-blocking)
 const saveResultsToBackend = async (score, correct, total, durationSeconds, wrongQuestionIds) => {
   try {
-    await examService.saveExamResult({
+    await examStore.saveExamResult({
       exam_id: exam.value.id,
       score,
       correct_count: correct,
@@ -582,7 +581,7 @@ const retrySubmission = async () => {
   if (!examResults.value) return
   
   try {
-    await examService.saveExamResult({
+    await examStore.saveExamResult({
       exam_id: exam.value.id,
       score: examResults.value.score,
       correct_count: examResults.value.correct,

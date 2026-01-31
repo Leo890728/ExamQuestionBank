@@ -79,7 +79,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import questionService from '../services/questionService'
-import tagService from '../services/tagService'
+import { useTagStore } from '@/stores/tagStore'
 import QuestionList from './QuestionList.vue'
 
 const props = defineProps({
@@ -97,6 +97,7 @@ const loading = ref(false)
 const selectedCount = ref(0)
 const tagOptions = ref([])
 const totalCount = ref(0)
+const tagStore = useTagStore()
 
 // 計算被排除的題目數量
 const excludedCount = computed(() => {
@@ -140,7 +141,7 @@ const handleSearchQuestions = async (filters, page, pageSize) => {
 
 const loadTags = async () => {
   try {
-    const res = await tagService.getTags()
+    const res = await tagStore.getTags()
     let items = res.data?.results || res.data
     if (!Array.isArray(items)) items = []
     tagOptions.value = items.filter(t => t != null)

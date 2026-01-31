@@ -148,7 +148,7 @@
 </template>
 
 <script>
-import examService from '@/services/examService'
+import { useExamStore } from '@/stores/examStore'
 import flashcardService from '@/services/flashcardService'
 
 export default {
@@ -194,7 +194,8 @@ export default {
       this.clearMessages()
 
       try {
-        await examService.addBookmark(this.results.wrongQuestionIds)
+        const examStore = useExamStore()
+        await examStore.addBookmark(this.results.wrongQuestionIds)
         
         const message = `Successfully bookmarked ${this.wrongQuestionCount} question${this.wrongQuestionCount > 1 ? 's' : ''} for review.`
         this.showSuccessMessage(message)
