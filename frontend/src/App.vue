@@ -242,7 +242,7 @@ onUnmounted(() => {
             </div>
           </div>
           <div v-else class="drawer-user-action">
-             <button class="btn btn-login full-width" @click="handleLogin; showMobileMenu = false">登入</button>
+             <button class="btn btn-login full-width" @click="handleLogin(); showMobileMenu = false">登入</button>
           </div>
 
           <hr class="drawer-divider" />
@@ -264,7 +264,7 @@ onUnmounted(() => {
               <span>深色模式</span>
               <ThemeToggle />
             </div>
-            <button v-if="isAuthenticated" class="btn btn-logout full-width mt-4" @click="handleLogout; showMobileMenu = false">
+            <button v-if="isAuthenticated" class="btn btn-logout full-width mt-4" @click="handleLogout(); showMobileMenu = false">
               <i class="bi bi-box-arrow-right me-2"></i> 登出
             </button>
           </div>
