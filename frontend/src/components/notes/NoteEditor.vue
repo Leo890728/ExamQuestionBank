@@ -6,13 +6,35 @@
         class="form-control title-input" 
         placeholder="筆記標題 (選填)"
       />
-      <div class="actions">
+      <div class="actions d-flex align-items-center gap-2">
+         <!-- Docking Toggle -->
+         <button 
+           class="btn btn-sm btn-icon text-muted" 
+           @click="$emit('toggle-position')"
+           :title="position === 'left' ? '切換至右側' : '切換至左側'"
+         >
+           <i class="bi" :class="position === 'left' ? 'bi-layout-sidebar-reverse' : 'bi-layout-sidebar'"></i>
+         </button>
+
+         <!-- Context Menu -->
+         <div class="dropdown" v-if="!isNew">
+            <button class="btn btn-sm btn-icon text-muted p-0" style="width: 24px; height: 24px;" data-bs-toggle="dropdown">
+              <i class="bi bi-three-dots"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+              <li><a class="dropdown-item text-danger" href="#" @click.prevent="$emit('delete', formData.id)">
+                <i class="bi bi-trash me-2"></i> 刪除
+              </a></li>
+            </ul>
+         </div>
+
+         <!-- Close Button (Replaces Trash) -->
         <button 
-          v-if="!isNew" 
-          class="btn btn-outline-danger btn-sm" 
-          @click="$emit('delete', formData.id)"
+          class="btn btn-icon btn-sm text-secondary" 
+          @click="$emit('cancel')"
+          title="關閉"
         >
-          <i class="bi bi-trash"></i>
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
     </div>
@@ -107,10 +129,14 @@ const props = defineProps({
     type: Object,
     default: () => ({ title: '', content: '', tags: [] })
   },
-  isSaving: Boolean
+  isSaving: Boolean,
+  position: {
+    type: String,
+    default: 'right'
+  }
 })
 
-const emit = defineEmits(['save', 'cancel', 'delete', 'ask-ai'])
+const emit = defineEmits(['save', 'cancel', 'delete', 'ask-ai', 'toggle-position'])
 
 const formData = ref({
   id: null,
@@ -286,5 +312,22 @@ function saveFlashcards() {
   max-height: 80%;
   overflow-y: auto;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f1f5f9;
+  color: #000;
 }
 </style>
