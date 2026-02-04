@@ -99,13 +99,17 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useNoteStore } from '../../stores/noteStore'
 
 const store = useNoteStore()
 const searchQuery = ref('')
 const filterType = ref('all')
 const activeTag = ref(null)
+
+onMounted(() => {
+  store.fetchNotes()
+})
 
 const allTags = computed(() => {
   const tags = new Set()
