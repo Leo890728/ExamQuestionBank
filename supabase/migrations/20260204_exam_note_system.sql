@@ -35,15 +35,18 @@ CREATE TABLE IF NOT EXISTS public.exam_note (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_exam_note_user ON public.exam_note(user_id);
-CREATE INDEX idx_exam_note_source ON public.exam_note(source_type, source_id);
-CREATE INDEX idx_exam_note_tags ON public.exam_note USING GIN(tags);
-CREATE INDEX idx_exam_note_pinned ON public.exam_note(user_id, is_pinned) WHERE is_pinned = true;
-CREATE INDEX idx_exam_note_created ON public.exam_note(user_id, created_at DESC);
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_user' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_user ON public.exam_note(user_id); END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_source' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_source ON public.exam_note(source_type, source_id); END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_tags' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_tags ON public.exam_note USING GIN(tags); END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_pinned' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_pinned ON public.exam_note(user_id, is_pinned) WHERE is_pinned = true; END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_created' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_created ON public.exam_note(user_id, created_at DESC); END IF; END $$;
 
 -- Full-text search for Chinese content
-CREATE INDEX idx_exam_note_fts ON public.exam_note
-    USING GIN(to_tsvector('simple', coalesce(title, '') || ' ' || content));
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_fts' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_fts ON public.exam_note USING GIN(to_tsvector('simple', coalesce(title, '') || ' ' || content)); END IF; END $$;
 
 -- Row Level Security
 ALTER TABLE public.exam_note ENABLE ROW LEVEL SECURITY;
@@ -69,8 +72,7 @@ CREATE TABLE IF NOT EXISTS public.exam_note_embedding (
 );
 
 -- HNSW index for fast similarity search
-CREATE INDEX idx_exam_note_embedding_vector ON public.exam_note_embedding
-    USING hnsw (embedding vector_cosine_ops);
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_embedding_vector' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_embedding_vector ON public.exam_note_embedding USING hnsw (embedding vector_cosine_ops); END IF; END $$;
 
 -- Row Level Security
 ALTER TABLE public.exam_note_embedding ENABLE ROW LEVEL SECURITY;
@@ -117,9 +119,11 @@ CREATE TABLE IF NOT EXISTS public.exam_note_flashcard (
 );
 
 -- Indexes
-CREATE INDEX idx_exam_note_flashcard_user ON public.exam_note_flashcard(user_id);
-CREATE INDEX idx_exam_note_flashcard_note ON public.exam_note_flashcard(note_id);
-CREATE INDEX idx_exam_note_flashcard_due ON public.exam_note_flashcard(user_id, next_review_date);
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_flashcard_user' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_flashcard_user ON public.exam_note_flashcard(user_id); END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_flashcard_note' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_flashcard_note ON public.exam_note_flashcard(note_id); END IF; END $$;
+
+DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind = 'i' AND c.relname = 'idx_exam_note_flashcard_due' AND n.nspname = 'public' ) THEN CREATE INDEX idx_exam_note_flashcard_due ON public.exam_note_flashcard(user_id, next_review_date); END IF; END $$;
 
 -- Row Level Security
 ALTER TABLE public.exam_note_flashcard ENABLE ROW LEVEL SECURITY;
