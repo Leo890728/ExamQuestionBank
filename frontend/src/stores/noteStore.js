@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { supabase } from '@/lib/supabase'
 
 export const useNoteStore = defineStore('notes', () => {
     // State
@@ -7,31 +8,39 @@ export const useNoteStore = defineStore('notes', () => {
     const activeNote = ref(null)
     const isDrawerOpen = ref(false)
     const drawerSource = ref(null) // { type: 'question', id: '...' }
+    const isLoading = ref(false)
+    const error = ref(null)
 
-    // Mock Data
-    const mockNotes = [
-        {
-            id: '1',
-            title: '憲法第7條重點',
-            content: '中華民國人民，無分男女、宗教、種族、階級、黨派，在法律上一律平等。此條文強調實質平等而非形式平等。',
-            source_type: 'question',
-            source_id: 'q_123',
-            tags: ['憲法', '平等權'],
-            created_at: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-            id: '2',
-            title: '行政法原則',
-            content: '比例原則：\n1. 適當性\n2. 必要性\n3. 衡量性 (狹義比例原則)',
-            source_type: 'manual',
-            source_id: null,
-            tags: ['行政法', '原則'],
-            created_at: new Date().toISOString()
+    // Initialize: Fetch notes from Supabase
+    async function fetchNotes() {
+        try {
+            isLoading.value = true
+            error.value = null
+
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                console.log('No authenticated user, skipping note fetch')
+                return
+            }
+
+            const { data, error: fetchError } = await supabase
+                .from('exam_note')
+                .select('*')
+                .eq('is_archived', false)
+                .order('is_pinned', { ascending: false })
+                .order('created_at', { ascending: false })
+
+            if (fetchError) throw fetchError
+
+            notes.value = data || []
+            console.log(`Loaded ${notes.value.length} notes from database`)
+        } catch (err) {
+            console.error('Error fetching notes:', err)
+            error.value = err.message
+        } finally {
+            isLoading.value = false
         }
-    ]
-
-    // Initialize with mock data
-    notes.value = [...mockNotes]
+    }
 
     // Getters
     const getNotesByQuestionId = computed(() => {
@@ -41,6 +50,9 @@ export const useNoteStore = defineStore('notes', () => {
     const getNoteById = computed(() => {
         return (id) => notes.value.find(n => n.id === id)
     })
+
+    const pinnedNotes = computed(() => notes.value.filter(n => n.is_pinned))
+    const unpinnedNotes = computed(() => notes.value.filter(n => !n.is_pinned))
 
     // Actions
     function openDrawer(source = null, noteId = null) {
@@ -68,41 +80,184 @@ export const useNoteStore = defineStore('notes', () => {
     }
 
     async function saveNote(noteData) {
-        console.log('Saving note:', noteData)
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500))
+        try {
+            isLoading.value = true
+            error.value = null
 
-        if (noteData.id) {
-            // Update
-            const index = notes.value.findIndex(n => n.id === noteData.id)
-            if (index !== -1) {
-                notes.value[index] = { ...notes.value[index], ...noteData, updated_at: new Date().toISOString() }
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                throw new Error('User not authenticated')
             }
-        } else {
-            // Create
-            const newNote = {
-                ...noteData,
-                id: crypto.randomUUID(),
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+
+            if (noteData.id) {
+                // Update existing note
+                const { data, error: updateError } = await supabase
+                    .from('exam_note')
+                    .update({
+                        title: noteData.title,
+                        content: noteData.content,
+                        content_html: noteData.content_html,
+                        source_type: noteData.source_type,
+                        source_id: noteData.source_id,
+                        source_url: noteData.source_url,
+                        source_metadata: noteData.source_metadata,
+                        tags: noteData.tags,
+                        is_pinned: noteData.is_pinned,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', noteData.id)
+                    .eq('user_id', user.id)
+                    .select()
+                    .single()
+
+                if (updateError) throw updateError
+
+                // Update local state
+                const index = notes.value.findIndex(n => n.id === noteData.id)
+                if (index !== -1) {
+                    notes.value[index] = data
+                }
+
+                // Re-generate embedding if content changed
+                if (noteData.content) {
+                    await generateEmbedding(data.id, data.content)
+                }
+
+                console.log('Note updated:', data.id)
+            } else {
+                // Create new note
+                const { data, error: insertError } = await supabase
+                    .from('exam_note')
+                    .insert({
+                        user_id: user.id,
+                        title: noteData.title,
+                        content: noteData.content,
+                        content_html: noteData.content_html,
+                        source_type: noteData.source_type,
+                        source_id: noteData.source_id,
+                        source_url: noteData.source_url,
+                        source_metadata: noteData.source_metadata,
+                        tags: noteData.tags || [],
+                        is_pinned: noteData.is_pinned || false,
+                        is_archived: false
+                    })
+                    .select()
+                    .single()
+
+                if (insertError) throw insertError
+
+                // Add to local state
+                notes.value.unshift(data)
+
+                // Generate embedding async (don't wait)
+                generateEmbedding(data.id, data.content).catch(err => {
+                    console.error('Failed to generate embedding:', err)
+                })
+
+                console.log('Note created:', data.id)
             }
-            notes.value.unshift(newNote)
+        } catch (err) {
+            console.error('Error saving note:', err)
+            error.value = err.message
+            throw err
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    async function generateEmbedding(noteId, content) {
+        try {
+            const { error: funcError } = await supabase.functions.invoke('embed-note', {
+                body: {
+                    note_id: noteId,
+                    content: content,
+                    table: 'exam_note'
+                }
+            })
+
+            if (funcError) {
+                console.error('Embedding generation failed:', funcError)
+            } else {
+                console.log('Embedding generated for note:', noteId)
+            }
+        } catch (err) {
+            console.error('Error calling embed-note function:', err)
         }
     }
 
     async function deleteNote(id) {
-        console.log('Deleting note:', id)
-        await new Promise(resolve => setTimeout(resolve, 300))
-        const index = notes.value.findIndex(n => n.id === id)
-        if (index !== -1) {
-            notes.value.splice(index, 1)
+        try {
+            isLoading.value = true
+            error.value = null
+
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                throw new Error('User not authenticated')
+            }
+
+            // Soft delete (archive)
+            const { error: deleteError } = await supabase
+                .from('exam_note')
+                .update({ is_archived: true })
+                .eq('id', id)
+                .eq('user_id', user.id)
+
+            if (deleteError) throw deleteError
+
+            // Remove from local state
+            const index = notes.value.findIndex(n => n.id === id)
+            if (index !== -1) {
+                notes.value.splice(index, 1)
+            }
+
+            console.log('Note archived:', id)
+        } catch (err) {
+            console.error('Error deleting note:', err)
+            error.value = err.message
+            throw err
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    async function togglePin(id) {
+        try {
+            const note = notes.value.find(n => n.id === id)
+            if (!note) return
+
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                throw new Error('User not authenticated')
+            }
+
+            const { data, error: updateError } = await supabase
+                .from('exam_note')
+                .update({ is_pinned: !note.is_pinned })
+                .eq('id', id)
+                .eq('user_id', user.id)
+                .select()
+                .single()
+
+            if (updateError) throw updateError
+
+            // Update local state
+            const index = notes.value.findIndex(n => n.id === id)
+            if (index !== -1) {
+                notes.value[index] = data
+            }
+
+            console.log('Note pin toggled:', id)
+        } catch (err) {
+            console.error('Error toggling pin:', err)
+            error.value = err.message
         }
     }
 
     async function generateFlashcard(noteContent) {
         console.log('Generating flashcard for:', noteContent)
+        // TODO: Implement AI flashcard generation via Edge Function
+        // For now, return mock data
         await new Promise(resolve => setTimeout(resolve, 1500))
-        // Mock response
         return [
             {
                 front: '根據筆記內容，中華民國憲法第7條強調什麼？',
@@ -116,15 +271,28 @@ export const useNoteStore = defineStore('notes', () => {
     }
 
     return {
+        // State
         notes,
         activeNote,
         isDrawerOpen,
         drawerSource,
+        isLoading,
+        error,
+
+        // Getters
         getNotesByQuestionId,
+        getNoteById,
+        pinnedNotes,
+        unpinnedNotes,
+
+        // Actions
+        fetchNotes,
         openDrawer,
         closeDrawer,
         saveNote,
         deleteNote,
+        togglePin,
+        generateEmbedding,
         generateFlashcard
     }
 })
