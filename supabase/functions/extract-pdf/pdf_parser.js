@@ -1,4 +1,9 @@
-import * as pdfjsLib from "npm:pdfjs-dist@4.10.38/legacy/build/pdf.mjs";
+import * as pdfjsLib from "./vendor/package/legacy/build/pdf.mjs";
+import * as pdfjsWorker from "./vendor/package/legacy/build/pdf.worker.mjs";
+
+if (!globalThis.pdfjsWorker) {
+  globalThis.pdfjsWorker = pdfjsWorker;
+}
 
 export const Flag = Object.freeze({
   BEGIN: -2,
