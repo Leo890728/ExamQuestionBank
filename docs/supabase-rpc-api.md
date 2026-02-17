@@ -24,6 +24,8 @@ Trigger helpers (e.g. `handle_updated_at`) are not listed here.
   - [Function details](#function-details)
     - [Questions functions](#questions-functions)
       - [Function: public.add_question](#function-publicadd_question)
+      - [Function: public.update_question](#function-publicupdate_question)
+      - [Function: public.delete_question](#function-publicdelete_question)
       - [Function: public.get_questions](#function-publicget_questions)
       - [Function: public.get_question_detail](#function-publicget_question_detail)
     - [Tags functions](#tags-functions)
@@ -44,12 +46,19 @@ Trigger helpers (e.g. `handle_updated_at`) are not listed here.
       - [Function: public.save_exam_result](#function-publicsave_exam_result)
       - [Function: public.get_exam_results](#function-publicget_exam_results)
       - [Function: public.get_wrong_questions](#function-publicget_wrong_questions)
+      - [Function: public.create_exam](#function-publiccreate_exam)
+      - [Function: public.update_exam](#function-publicupdate_exam)
+      - [Function: public.delete_exam](#function-publicdelete_exam)
+      - [Function: public.add_exam_question](#function-publicadd_exam_question)
+      - [Function: public.remove_exam_question](#function-publicremove_exam_question)
+      - [Function: public.batch_update_exam_questions](#function-publicbatch_update_exam_questions)
     - [Flashcards functions](#flashcards-functions)
       - [Function: public.get_flashcards](#function-publicget_flashcards)
       - [Function: public.get_due_flashcards](#function-publicget_due_flashcards)
       - [Function: public.review_flashcard](#function-publicreview_flashcard)
       - [Function: public.get_flashcard_stats](#function-publicget_flashcard_stats)
     - [Bookmarks and analytics functions](#bookmarks-and-analytics-functions)
+      - [Function: public.toggle_bookmark](#function-publictoggle_bookmark)
       - [Function: public.get_bookmarks](#function-publicget_bookmarks)
       - [Function: public.get_user_analytics](#function-publicget_user_analytics)
     - [Discussion MVP functions](#discussion-mvp-functions)
@@ -74,7 +83,9 @@ Permission legend: `anon`, `authenticated`, `service_role`. If a function is not
 
 - `public.get_questions(p_subject text default null, p_difficulty text default null, p_type text default null, p_year integer default null, p_keyword text default null, p_page integer default 1, p_page_size integer default 20) returns json` — `anon`, `authenticated`
 - `public.get_question_detail(p_id bigint) returns json` — `anon`, `authenticated`
-- `public.add_question(content text, explanation text default null, question_type text default null, difficulty text default null, subject text default null, category text default null, year smallint default null, source text default null, options jsonb default '[]'::jsonb, tag_ids bigint[] default null, creator uuid default null, status text default null) returns bigint` — `authenticated`
+- `public.add_question(p_content text, p_explanation text default null, p_question_type text default null, p_difficulty text default null, p_subject text default null, p_category text default null, p_year smallint default null, p_source text default null, p_options jsonb default '[]'::jsonb, p_tag_ids bigint[] default null) returns bigint` — `authenticated` (admin-only)
+- `public.update_question(p_id bigint, p_content text default null, p_explanation text default null, p_question_type text default null, p_difficulty text default null, p_subject text default null, p_category text default null, p_year smallint default null, p_source text default null, p_options jsonb default null, p_tag_ids bigint[] default null) returns json` — `authenticated` (admin-only)
+- `public.delete_question(p_id bigint) returns json` — `authenticated` (admin-only)
 
 ### Tags
 
@@ -99,6 +110,12 @@ Permission legend: `anon`, `authenticated`, `service_role`. If a function is not
 - `public.save_exam_result(p_exam_id bigint default null, p_exam_name text default '', p_score numeric default 0, p_correct_count integer default 0, p_total_count integer default 0, p_duration_seconds integer default null, p_answers_json jsonb default null, p_wrong_question_ids bigint[] default null) returns json` — `authenticated`
 - `public.get_exam_results() returns json` — `authenticated`
 - `public.get_wrong_questions() returns json` — `authenticated`
+- `public.create_exam(p_name text, p_description text default null, p_time_limit int default 60, p_publish boolean default false) returns json` — `authenticated`
+- `public.update_exam(p_id bigint, p_name text default null, p_description text default null, p_time_limit int default null, p_publish boolean default null) returns json` — `authenticated`
+- `public.delete_exam(p_id bigint) returns json` — `authenticated`
+- `public.add_exam_question(p_exam_id bigint, p_question_id bigint, p_order smallint default 1, p_points decimal(5,2) default 1.0) returns json` — `authenticated`
+- `public.remove_exam_question(p_exam_id bigint, p_exam_question_id bigint) returns json` — `authenticated`
+- `public.batch_update_exam_questions(p_exam_id bigint, p_updates jsonb) returns void` — `authenticated`
 
 ### Flashcards
 
@@ -109,6 +126,7 @@ Permission legend: `anon`, `authenticated`, `service_role`. If a function is not
 
 ### Bookmarks and analytics
 
+- `public.toggle_bookmark(p_question_id bigint) returns json` — `authenticated`
 - `public.get_bookmarks() returns json` — `authenticated`
 - `public.get_user_analytics() returns json` — `authenticated`
 
@@ -168,7 +186,7 @@ Updates `auth.users.raw_user_meta_data.is_admin` for the target user.
 
 ### Questions functions
 
-#### Function: public.add_question — auth: authenticated
+#### Function: public.add_question — auth: authenticated (admin-only)
 
 Creates a question in `public.question`, then inserts related options in
 `public.question_option` and tag links in `public.question_tag`.
@@ -176,24 +194,24 @@ Creates a question in `public.question`, then inserts related options in
 ### Auth
 
 `EXECUTE` is granted to the `authenticated` role. The function runs as
-`SECURITY DEFINER` and sets `creator` to `auth.uid()` when available.
+`SECURITY DEFINER` and enforces an admin check
+(`raw_user_meta_data.is_admin = true`). The `creator` is set to
+`auth.uid()`.
 
 ### Parameters
 
 | Name | Type | Required | Notes |
 | --- | --- | --- | --- |
-| content | text | yes | Trimmed; empty content raises error. |
-| explanation | text | no | Empty string becomes NULL. |
-| question_type | text | no | Accepts `essay` or `multipleChoice`. If not provided or invalid, the function picks `multipleChoice` when options exist, otherwise `essay`. |
-| difficulty | text | no | Accepts `easy`, `normal`, `hard`, `insane`. If `medium`, it is mapped to `normal`. Anything else falls back to `normal`. |
-| subject | text | no | Empty string becomes NULL. |
-| category | text | no | Empty string becomes NULL. |
-| year | smallint | no | Stored on the question row. |
-| source | text | no | Empty string becomes NULL. |
-| options | jsonb | no | JSON array of option objects. Non-array or empty array means no options. |
-| tag_ids | bigint[] | no | Tag IDs to insert into `public.question_tag`. |
-| creator | uuid | no | Used only when `auth.uid()` is NULL (e.g., service role). |
-| status | text | no | Accepted for compatibility but ignored (no column in Supabase schema). |
+| p_content | text | yes | Trimmed; empty content raises error. |
+| p_explanation | text | no | Empty string becomes NULL. |
+| p_question_type | text | no | Accepts `essay` or `multipleChoice`. If not provided or invalid, the function picks `multipleChoice` when options exist, otherwise `essay`. |
+| p_difficulty | text | no | Accepts `easy`, `normal`, `hard`, `insane`. If `medium`, it is mapped to `normal`. Anything else falls back to `normal`. |
+| p_subject | text | no | Empty string becomes NULL. |
+| p_category | text | no | Empty string becomes NULL. |
+| p_year | smallint | no | Stored on the question row. |
+| p_source | text | no | Empty string becomes NULL. |
+| p_options | jsonb | no | JSON array of option objects. Non-array or empty array means no options. |
+| p_tag_ids | bigint[] | no | Tag IDs to insert into `public.question_tag`. |
 
 ### options format
 
@@ -216,11 +234,11 @@ If you provide duplicate `order` values, the insert will fail due to the
 
 ```sql
 select public.add_question(
-  content => 'Sample question?',
-  question_type => 'multipleChoice',
-  difficulty => 'normal',
-  options => '[{"content":"A","is_correct":true},{"content":"B","is_correct":false}]'::jsonb,
-  tag_ids => '{1,2}'::bigint[]
+  p_content => 'Sample question?',
+  p_question_type => 'multipleChoice',
+  p_difficulty => 'normal',
+  p_options => '[{"content":"A","is_correct":true},{"content":"B","is_correct":false}]'::jsonb,
+  p_tag_ids => '{1,2}'::bigint[]
 );
 ```
 
@@ -228,23 +246,120 @@ select public.add_question(
 
 ```ts
 const { data, error } = await supabase.rpc('add_question', {
-  content: 'Sample question?',
-  question_type: 'multipleChoice',
-  difficulty: 'normal',
-  options: [
+  p_content: 'Sample question?',
+  p_question_type: 'multipleChoice',
+  p_difficulty: 'normal',
+  p_options: [
     { content: 'A', is_correct: true },
     { content: 'B', is_correct: false }
   ],
-  tag_ids: [1, 2]
+  p_tag_ids: [1, 2]
 })
 ```
 
 ### Notes
 
+- Requires the caller to have `raw_user_meta_data.is_admin = true`.
 - `public.question.type` is stored as `public.question_type` enum.
 - `public.question.difficulty` is stored as `public.question_difficulty` enum.
 - The function trims text fields and converts empty strings to NULL where
   applicable.
+
+#### Function: public.update_question — auth: authenticated (admin-only)
+
+Updates an existing question, its options, and tag links.
+
+### Auth
+
+`EXECUTE` is granted to the `authenticated` role. The function runs as
+`SECURITY DEFINER` and enforces an admin check
+(`raw_user_meta_data.is_admin = true`).
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_id | bigint | yes | Question ID. |
+| p_content | text | no | NULL leaves unchanged. |
+| p_explanation | text | no | NULL leaves unchanged. |
+| p_question_type | text | no | NULL leaves unchanged. |
+| p_difficulty | text | no | NULL leaves unchanged. |
+| p_subject | text | no | NULL leaves unchanged. |
+| p_category | text | no | NULL leaves unchanged. |
+| p_year | smallint | no | NULL leaves unchanged. |
+| p_source | text | no | NULL leaves unchanged. |
+| p_options | jsonb | no | NULL leaves unchanged; non-NULL replaces all options. |
+| p_tag_ids | bigint[] | no | NULL leaves unchanged; non-NULL replaces all tags. |
+
+### Returns
+
+`json` object with the updated question fields.
+
+### Example (SQL)
+
+```sql
+select public.update_question(
+  p_id => 123,
+  p_content => 'Updated content?',
+  p_difficulty => 'hard'
+);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('update_question', {
+  p_id: 123,
+  p_content: 'Updated content?',
+  p_difficulty: 'hard'
+})
+```
+
+### Notes
+
+- Requires the caller to have `raw_user_meta_data.is_admin = true`.
+- Only non-NULL parameters are applied (COALESCE pattern).
+- Raises an error if the question is not found.
+
+#### Function: public.delete_question — auth: authenticated (admin-only)
+
+Deletes a question.
+
+### Auth
+
+`EXECUTE` is granted to the `authenticated` role. The function runs as
+`SECURITY DEFINER` and enforces an admin check
+(`raw_user_meta_data.is_admin = true`).
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_id | bigint | yes | Question ID. |
+
+### Returns
+
+`json` object with `success` and `id`.
+
+### Example (SQL)
+
+```sql
+select public.delete_question(p_id => 123);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('delete_question', {
+  p_id: 123
+})
+```
+
+### Notes
+
+- Requires the caller to have `raw_user_meta_data.is_admin = true`.
+- Cascades to `question_option`, `question_tag`, and related rows via
+  foreign keys.
 
 #### Function: public.get_questions — auth: anon, authenticated
 
@@ -937,6 +1052,299 @@ const { data, error } = await supabase.rpc('get_wrong_questions')
 
 - Ordered by `wrong_count` descending.
 
+#### Function: public.create_exam — auth: authenticated
+
+Creates a new exam owned by the current user.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER` and sets `creator` to `auth.uid()`.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_name | text | yes | Trimmed; empty string defaults to `'Untitled Exam'`. |
+| p_description | text | no | Empty string becomes NULL. |
+| p_time_limit | int | no | Default `60`. |
+| p_publish | boolean | no | Default `false`. |
+
+### Returns
+
+`json` object with `id`, `name`, `description`, `time_limit`, `publish`,
+`creator`, `created_at`.
+
+### Example (SQL)
+
+```sql
+select public.create_exam(
+  p_name => 'Mock Exam A',
+  p_description => 'Practice exam',
+  p_time_limit => 90,
+  p_publish => false
+);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('create_exam', {
+  p_name: 'Mock Exam A',
+  p_description: 'Practice exam',
+  p_time_limit: 90,
+  p_publish: false
+})
+```
+
+### Notes
+
+- Raises `Authentication required` if not authenticated.
+
+#### Function: public.update_exam — auth: authenticated
+
+Updates an existing exam. Non-admin users can only update their own exams.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER`. Ownership check: non-admin callers must be the exam
+creator.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_id | bigint | yes | Exam ID. |
+| p_name | text | no | NULL leaves unchanged; empty string leaves unchanged. |
+| p_description | text | no | NULL leaves unchanged. |
+| p_time_limit | int | no | NULL leaves unchanged. |
+| p_publish | boolean | no | NULL leaves unchanged. |
+
+### Returns
+
+`json` object with `id`, `name`, `description`, `time_limit`, `publish`,
+`creator`, `created_at`, `updated_at`.
+
+### Example (SQL)
+
+```sql
+select public.update_exam(
+  p_id => 10,
+  p_name => 'Updated Name',
+  p_time_limit => 120
+);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('update_exam', {
+  p_id: 10,
+  p_name: 'Updated Name',
+  p_time_limit: 120
+})
+```
+
+### Notes
+
+- Only non-NULL parameters are applied (COALESCE pattern).
+- Raises `Exam not found or access denied` if the caller is not admin and
+  not the exam creator.
+
+#### Function: public.delete_exam — auth: authenticated
+
+Deletes an exam. Non-admin users can only delete their own exams.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER`. Ownership check: non-admin callers must be the exam
+creator.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_id | bigint | yes | Exam ID. |
+
+### Returns
+
+`json` object with `success` and `id`.
+
+### Example (SQL)
+
+```sql
+select public.delete_exam(p_id => 10);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('delete_exam', {
+  p_id: 10
+})
+```
+
+### Notes
+
+- Cascades to `exam_question` rows via foreign key.
+- Raises `Exam not found or access denied` if ownership check fails.
+
+#### Function: public.add_exam_question — auth: authenticated
+
+Adds a question to an exam. Non-admin users can only modify their own exams.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER`. Ownership check: non-admin callers must be the exam
+creator.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_exam_id | bigint | yes | Exam ID. |
+| p_question_id | bigint | yes | Question ID to add. |
+| p_order | smallint | no | Default `1`. |
+| p_points | decimal(5,2) | no | Default `1.0`. |
+
+### Returns
+
+`json` object with `success` and `id` (new `exam_question.id`).
+
+### Example (SQL)
+
+```sql
+select public.add_exam_question(
+  p_exam_id => 10,
+  p_question_id => 42,
+  p_order => 5,
+  p_points => 2.0
+);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('add_exam_question', {
+  p_exam_id: 10,
+  p_question_id: 42,
+  p_order: 5,
+  p_points: 2.0
+})
+```
+
+### Notes
+
+- Raises `Exam not found or access denied` if ownership check fails.
+- Unique constraint on `(exam_id, question_id)` prevents duplicates.
+
+#### Function: public.remove_exam_question — auth: authenticated
+
+Removes a question from an exam. Non-admin users can only modify their own
+exams.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER`. Ownership check: non-admin callers must be the exam
+creator.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_exam_id | bigint | yes | Exam ID (used for ownership check). |
+| p_exam_question_id | bigint | yes | `exam_question.id` to remove. |
+
+### Returns
+
+`json` object with `success` and `id`.
+
+### Example (SQL)
+
+```sql
+select public.remove_exam_question(
+  p_exam_id => 10,
+  p_exam_question_id => 55
+);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('remove_exam_question', {
+  p_exam_id: 10,
+  p_exam_question_id: 55
+})
+```
+
+### Notes
+
+- Raises `Exam question not found` if the row does not exist.
+
+#### Function: public.batch_update_exam_questions — auth: authenticated
+
+Batch updates order and points for multiple exam questions in a single
+transaction.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER`. Ownership check: caller must be the exam creator.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_exam_id | bigint | yes | Exam ID. |
+| p_updates | jsonb | yes | JSON array of update objects. |
+
+Each object in `p_updates`:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| exam_question_id | bigint | yes | `exam_question.id` to update. |
+| order | smallint | no | New order value. |
+| points | decimal(5,2) | no | New points value. |
+
+### Returns
+
+`void`
+
+### Example (SQL)
+
+```sql
+select public.batch_update_exam_questions(
+  p_exam_id => 10,
+  p_updates => '[
+    {"exam_question_id": 55, "order": 1, "points": 2.0},
+    {"exam_question_id": 56, "order": 2, "points": 1.5}
+  ]'::jsonb
+);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('batch_update_exam_questions', {
+  p_exam_id: 10,
+  p_updates: [
+    { exam_question_id: 55, order: 1, points: 2.0 },
+    { exam_question_id: 56, order: 2, points: 1.5 }
+  ]
+})
+```
+
+### Notes
+
+- The unique constraint on `(exam_id, "order")` is `DEFERRABLE INITIALLY
+  DEFERRED`, so order swaps within the same transaction won't cause
+  violations.
+- Raises `Exam not found or access denied` if ownership check fails.
+
 ### Flashcards functions
 
 #### Function: public.get_flashcards — auth: authenticated
@@ -1087,6 +1495,45 @@ const { data, error } = await supabase.rpc('get_flashcard_stats')
 - `learning` counts all cards where `status != 'mastered'`.
 
 ### Bookmarks and analytics functions
+
+#### Function: public.toggle_bookmark — auth: authenticated
+
+Toggles a bookmark for the current user on a question. If the bookmark
+exists it is removed; otherwise it is created.
+
+### Auth
+
+`EXECUTE` is granted to `authenticated`. The function runs as
+`SECURITY DEFINER`.
+
+### Parameters
+
+| Name | Type | Required | Notes |
+| --- | --- | --- | --- |
+| p_question_id | bigint | yes | Question ID to toggle bookmark on. |
+
+### Returns
+
+`json` object with `{ bookmarked: bool }` indicating the new state.
+
+### Example (SQL)
+
+```sql
+select public.toggle_bookmark(p_question_id => 42);
+```
+
+### Example (Supabase JS)
+
+```ts
+const { data, error } = await supabase.rpc('toggle_bookmark', {
+  p_question_id: 42
+})
+```
+
+### Notes
+
+- Returns `{ "bookmarked": true }` when a bookmark was created.
+- Returns `{ "bookmarked": false }` when an existing bookmark was removed.
 
 #### Function: public.get_bookmarks — auth: authenticated
 

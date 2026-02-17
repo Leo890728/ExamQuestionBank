@@ -24,6 +24,8 @@
   - [函式詳細說明](#函式詳細說明)
     - [題目（函式）](#題目函式)
       - [函式：public.add_question](#函式publicadd_question)
+      - [函式：public.update_question](#函式publicupdate_question)
+      - [函式：public.delete_question](#函式publicdelete_question)
       - [函式：public.get_questions](#函式publicget_questions)
       - [函式：public.get_question_detail](#函式publicget_question_detail)
     - [標籤（函式）](#標籤函式)
@@ -44,12 +46,19 @@
       - [函式：public.save_exam_result](#函式publicsave_exam_result)
       - [函式：public.get_exam_results](#函式publicget_exam_results)
       - [函式：public.get_wrong_questions](#函式publicget_wrong_questions)
+      - [函式：public.create_exam](#函式publiccreate_exam)
+      - [函式：public.update_exam](#函式publicupdate_exam)
+      - [函式：public.delete_exam](#函式publicdelete_exam)
+      - [函式：public.add_exam_question](#函式publicadd_exam_question)
+      - [函式：public.remove_exam_question](#函式publicremove_exam_question)
+      - [函式：public.batch_update_exam_questions](#函式publicbatch_update_exam_questions)
     - [單字卡（函式）](#單字卡函式)
       - [函式：public.get_flashcards](#函式publicget_flashcards)
       - [函式：public.get_due_flashcards](#函式publicget_due_flashcards)
       - [函式：public.review_flashcard](#函式publicreview_flashcard)
       - [函式：public.get_flashcard_stats](#函式publicget_flashcard_stats)
     - [書籤與分析（函式）](#書籤與分析函式)
+      - [函式：public.toggle_bookmark](#函式publictoggle_bookmark)
       - [函式：public.get_bookmarks](#函式publicget_bookmarks)
       - [函式：public.get_user_analytics](#函式publicget_user_analytics)
     - [討論區 MVP（函式）](#討論區-mvp函式)
@@ -74,7 +83,9 @@
 
 - `public.get_questions(p_subject text default null, p_difficulty text default null, p_type text default null, p_year integer default null, p_keyword text default null, p_page integer default 1, p_page_size integer default 20) returns json` — `anon`, `authenticated`
 - `public.get_question_detail(p_id bigint) returns json` — `anon`, `authenticated`
-- `public.add_question(content text, explanation text default null, question_type text default null, difficulty text default null, subject text default null, category text default null, year smallint default null, source text default null, options jsonb default '[]'::jsonb, tag_ids bigint[] default null, creator uuid default null, status text default null) returns bigint` — `authenticated`
+- `public.add_question(p_content text, p_explanation text default null, p_question_type text default null, p_difficulty text default null, p_subject text default null, p_category text default null, p_year smallint default null, p_source text default null, p_options jsonb default '[]'::jsonb, p_tag_ids bigint[] default null) returns bigint` — `authenticated`（admin-only）
+- `public.update_question(p_id bigint, p_content text default null, p_explanation text default null, p_question_type text default null, p_difficulty text default null, p_subject text default null, p_category text default null, p_year smallint default null, p_source text default null, p_options jsonb default null, p_tag_ids bigint[] default null) returns json` — `authenticated`（admin-only）
+- `public.delete_question(p_id bigint) returns json` — `authenticated`（admin-only）
 
 ### 標籤
 
@@ -99,6 +110,12 @@
 - `public.save_exam_result(p_exam_id bigint default null, p_exam_name text default '', p_score numeric default 0, p_correct_count integer default 0, p_total_count integer default 0, p_duration_seconds integer default null, p_answers_json jsonb default null, p_wrong_question_ids bigint[] default null) returns json` — `authenticated`
 - `public.get_exam_results() returns json` — `authenticated`
 - `public.get_wrong_questions() returns json` — `authenticated`
+- `public.create_exam(p_name text, p_description text default null, p_time_limit int default 60, p_publish boolean default false) returns json` — `authenticated`
+- `public.update_exam(p_id bigint, p_name text default null, p_description text default null, p_time_limit int default null, p_publish boolean default null) returns json` — `authenticated`
+- `public.delete_exam(p_id bigint) returns json` — `authenticated`
+- `public.add_exam_question(p_exam_id bigint, p_question_id bigint, p_order smallint default 1, p_points decimal(5,2) default 1.0) returns json` — `authenticated`
+- `public.remove_exam_question(p_exam_id bigint, p_exam_question_id bigint) returns json` — `authenticated`
+- `public.batch_update_exam_questions(p_exam_id bigint, p_updates jsonb) returns void` — `authenticated`
 
 ### 單字卡
 
@@ -109,6 +126,7 @@
 
 ### 書籤與分析
 
+- `public.toggle_bookmark(p_question_id bigint) returns json` — `authenticated`
 - `public.get_bookmarks() returns json` — `authenticated`
 - `public.get_user_analytics() returns json` — `authenticated`
 
@@ -168,7 +186,7 @@
 
 ### 題目（函式）
 
-#### 函式：public.add_question — 權限：authenticated
+#### 函式：public.add_question — 權限：authenticated（admin-only）
 
 建立一題 `public.question`，並新增相關的選項到
 `public.question_option`，以及標籤關聯到 `public.question_tag`。
@@ -176,24 +194,24 @@
 ##### 權限
 
 `EXECUTE` 授權給 `authenticated` 角色。函式以
-`SECURITY DEFINER` 執行，並在可用時將 `creator` 設為 `auth.uid()`。
+`SECURITY DEFINER` 執行，並強制檢查管理員權限
+（`raw_user_meta_data.is_admin = true`）。`creator` 設為
+`auth.uid()`。
 
 ##### 參數
 
 | 名稱 | 類型 | 必填 | 說明 |
 | --- | --- | --- | --- |
-| content | text | 是 | 會 `trim`；空字串會拋出錯誤。 |
-| explanation | text | 否 | 空字串會轉為 NULL。 |
-| question_type | text | 否 | 接受 `essay` 或 `multipleChoice`。未提供或無效時，有選項就用 `multipleChoice`，否則用 `essay`。 |
-| difficulty | text | 否 | 接受 `easy`、`normal`、`hard`、`insane`。`medium` 會映射為 `normal`，其他值回落到 `normal`。 |
-| subject | text | 否 | 空字串會轉為 NULL。 |
-| category | text | 否 | 空字串會轉為 NULL。 |
-| year | smallint | 否 | 寫入題目年份。 |
-| source | text | 否 | 空字串會轉為 NULL。 |
-| options | jsonb | 否 | 選項物件陣列。非陣列或空陣列代表無選項。 |
-| tag_ids | bigint[] | 否 | 要插入 `public.question_tag` 的標籤 ID。 |
-| creator | uuid | 否 | 只在 `auth.uid()` 為 NULL 時使用（例如 service role）。 |
-| status | text | 否 | 為相容性保留但會被忽略（Supabase schema 無此欄位）。 |
+| p_content | text | 是 | 會 `trim`；空字串會拋出錯誤。 |
+| p_explanation | text | 否 | 空字串會轉為 NULL。 |
+| p_question_type | text | 否 | 接受 `essay` 或 `multipleChoice`。未提供或無效時，有選項就用 `multipleChoice`，否則用 `essay`。 |
+| p_difficulty | text | 否 | 接受 `easy`、`normal`、`hard`、`insane`。`medium` 會映射為 `normal`，其他值回落到 `normal`。 |
+| p_subject | text | 否 | 空字串會轉為 NULL。 |
+| p_category | text | 否 | 空字串會轉為 NULL。 |
+| p_year | smallint | 否 | 寫入題目年份。 |
+| p_source | text | 否 | 空字串會轉為 NULL。 |
+| p_options | jsonb | 否 | 選項物件陣列。非陣列或空陣列代表無選項。 |
+| p_tag_ids | bigint[] | 否 | 要插入 `public.question_tag` 的標籤 ID。 |
 
 ##### options 格式
 
@@ -216,11 +234,11 @@
 
 ```sql
 select public.add_question(
-  content => 'Sample question?',
-  question_type => 'multipleChoice',
-  difficulty => 'normal',
-  options => '[{"content":"A","is_correct":true},{"content":"B","is_correct":false}]'::jsonb,
-  tag_ids => '{1,2}'::bigint[]
+  p_content => 'Sample question?',
+  p_question_type => 'multipleChoice',
+  p_difficulty => 'normal',
+  p_options => '[{"content":"A","is_correct":true},{"content":"B","is_correct":false}]'::jsonb,
+  p_tag_ids => '{1,2}'::bigint[]
 );
 ```
 
@@ -228,22 +246,118 @@ select public.add_question(
 
 ```ts
 const { data, error } = await supabase.rpc('add_question', {
-  content: 'Sample question?',
-  question_type: 'multipleChoice',
-  difficulty: 'normal',
-  options: [
+  p_content: 'Sample question?',
+  p_question_type: 'multipleChoice',
+  p_difficulty: 'normal',
+  p_options: [
     { content: 'A', is_correct: true },
     { content: 'B', is_correct: false }
   ],
-  tag_ids: [1, 2]
+  p_tag_ids: [1, 2]
 })
 ```
 
 ##### 備註
 
+- 呼叫者必須具備 `raw_user_meta_data.is_admin = true`。
 - `public.question.type` 使用 `public.question_type` enum。
 - `public.question.difficulty` 使用 `public.question_difficulty` enum。
 - 函式會 `trim` 文字欄位，並將空字串轉為 NULL（適用者）。
+
+#### 函式：public.update_question — 權限：authenticated（admin-only）
+
+更新既有題目、選項與標籤關聯。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated` 角色。函式以
+`SECURITY DEFINER` 執行，並強制檢查管理員權限
+（`raw_user_meta_data.is_admin = true`）。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_id | bigint | 是 | 題目 ID。 |
+| p_content | text | 否 | NULL 則不更新。 |
+| p_explanation | text | 否 | NULL 則不更新。 |
+| p_question_type | text | 否 | NULL 則不更新。 |
+| p_difficulty | text | 否 | NULL 則不更新。 |
+| p_subject | text | 否 | NULL 則不更新。 |
+| p_category | text | 否 | NULL 則不更新。 |
+| p_year | smallint | 否 | NULL 則不更新。 |
+| p_source | text | 否 | NULL 則不更新。 |
+| p_options | jsonb | 否 | NULL 則不更新；非 NULL 時會取代所有選項。 |
+| p_tag_ids | bigint[] | 否 | NULL 則不更新；非 NULL 時會取代所有標籤。 |
+
+##### 回傳
+
+`json` 物件，包含更新後的題目欄位。
+
+##### 範例（SQL）
+
+```sql
+select public.update_question(
+  p_id => 123,
+  p_content => 'Updated content?',
+  p_difficulty => 'hard'
+);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('update_question', {
+  p_id: 123,
+  p_content: 'Updated content?',
+  p_difficulty: 'hard'
+})
+```
+
+##### 備註
+
+- 呼叫者必須具備 `raw_user_meta_data.is_admin = true`。
+- 僅非 NULL 參數會被套用（COALESCE 模式）。
+- 若題目不存在會拋出錯誤。
+
+#### 函式：public.delete_question — 權限：authenticated（admin-only）
+
+刪除題目。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated` 角色。函式以
+`SECURITY DEFINER` 執行，並強制檢查管理員權限
+（`raw_user_meta_data.is_admin = true`）。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_id | bigint | 是 | 題目 ID。 |
+
+##### 回傳
+
+`json` 物件，包含 `success` 與 `id`。
+
+##### 範例（SQL）
+
+```sql
+select public.delete_question(p_id => 123);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('delete_question', {
+  p_id: 123
+})
+```
+
+##### 備註
+
+- 呼叫者必須具備 `raw_user_meta_data.is_admin = true`。
+- 會透過外鍵連動刪除 `question_option`、`question_tag` 及相關資料列。
 
 #### 函式：public.get_questions — 權限：anon、authenticated
 
@@ -934,6 +1048,290 @@ const { data, error } = await supabase.rpc('get_wrong_questions')
 
 - 依 `wrong_count` 由高到低排序。
 
+#### 函式：public.create_exam — 權限：authenticated
+
+建立一份新測驗，擁有者為當前使用者。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行，`creator` 設為 `auth.uid()`。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_name | text | 是 | 會 `trim`；空字串預設為 `'Untitled Exam'`。 |
+| p_description | text | 否 | 空字串會轉為 NULL。 |
+| p_time_limit | int | 否 | 預設 `60`。 |
+| p_publish | boolean | 否 | 預設 `false`。 |
+
+##### 回傳
+
+`json` 物件，包含 `id`, `name`, `description`, `time_limit`, `publish`,
+`creator`, `created_at`。
+
+##### 範例（SQL）
+
+```sql
+select public.create_exam(
+  p_name => 'Mock Exam A',
+  p_description => 'Practice exam',
+  p_time_limit => 90,
+  p_publish => false
+);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('create_exam', {
+  p_name: 'Mock Exam A',
+  p_description: 'Practice exam',
+  p_time_limit: 90,
+  p_publish: false
+})
+```
+
+##### 備註
+
+- 未登入時會拋出 `Authentication required`。
+
+#### 函式：public.update_exam — 權限：authenticated
+
+更新既有測驗。非管理員只能更新自己建立的測驗。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行。擁有權檢查：非管理員必須是測驗建立者。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_id | bigint | 是 | 測驗 ID。 |
+| p_name | text | 否 | NULL 則不更新；空字串也不更新。 |
+| p_description | text | 否 | NULL 則不更新。 |
+| p_time_limit | int | 否 | NULL 則不更新。 |
+| p_publish | boolean | 否 | NULL 則不更新。 |
+
+##### 回傳
+
+`json` 物件，包含 `id`, `name`, `description`, `time_limit`, `publish`,
+`creator`, `created_at`, `updated_at`。
+
+##### 範例（SQL）
+
+```sql
+select public.update_exam(
+  p_id => 10,
+  p_name => 'Updated Name',
+  p_time_limit => 120
+);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('update_exam', {
+  p_id: 10,
+  p_name: 'Updated Name',
+  p_time_limit: 120
+})
+```
+
+##### 備註
+
+- 僅非 NULL 參數會被套用（COALESCE 模式）。
+- 非管理員且非建立者時會拋出 `Exam not found or access denied`。
+
+#### 函式：public.delete_exam — 權限：authenticated
+
+刪除測驗。非管理員只能刪除自己建立的測驗。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行。擁有權檢查：非管理員必須是測驗建立者。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_id | bigint | 是 | 測驗 ID。 |
+
+##### 回傳
+
+`json` 物件，包含 `success` 與 `id`。
+
+##### 範例（SQL）
+
+```sql
+select public.delete_exam(p_id => 10);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('delete_exam', {
+  p_id: 10
+})
+```
+
+##### 備註
+
+- 會透過外鍵連動刪除 `exam_question` 資料列。
+- 擁有權檢查失敗時會拋出 `Exam not found or access denied`。
+
+#### 函式：public.add_exam_question — 權限：authenticated
+
+將題目加入測驗。非管理員只能修改自己建立的測驗。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行。擁有權檢查：非管理員必須是測驗建立者。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_exam_id | bigint | 是 | 測驗 ID。 |
+| p_question_id | bigint | 是 | 要加入的題目 ID。 |
+| p_order | smallint | 否 | 預設 `1`。 |
+| p_points | decimal(5,2) | 否 | 預設 `1.0`。 |
+
+##### 回傳
+
+`json` 物件，包含 `success` 與 `id`（新的 `exam_question.id`）。
+
+##### 範例（SQL）
+
+```sql
+select public.add_exam_question(
+  p_exam_id => 10,
+  p_question_id => 42,
+  p_order => 5,
+  p_points => 2.0
+);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('add_exam_question', {
+  p_exam_id: 10,
+  p_question_id: 42,
+  p_order: 5,
+  p_points: 2.0
+})
+```
+
+##### 備註
+
+- 擁有權檢查失敗時會拋出 `Exam not found or access denied`。
+- `(exam_id, question_id)` 唯一限制會防止重複加入。
+
+#### 函式：public.remove_exam_question — 權限：authenticated
+
+從測驗移除題目。非管理員只能修改自己建立的測驗。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行。擁有權檢查：非管理員必須是測驗建立者。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_exam_id | bigint | 是 | 測驗 ID（用於擁有權檢查）。 |
+| p_exam_question_id | bigint | 是 | 要移除的 `exam_question.id`。 |
+
+##### 回傳
+
+`json` 物件，包含 `success` 與 `id`。
+
+##### 範例（SQL）
+
+```sql
+select public.remove_exam_question(
+  p_exam_id => 10,
+  p_exam_question_id => 55
+);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('remove_exam_question', {
+  p_exam_id: 10,
+  p_exam_question_id: 55
+})
+```
+
+##### 備註
+
+- 若資料列不存在，會拋出 `Exam question not found`。
+
+#### 函式：public.batch_update_exam_questions — 權限：authenticated
+
+在單一交易中批次更新多筆測驗題目的順序與分數。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行。擁有權檢查：呼叫者必須是測驗建立者。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_exam_id | bigint | 是 | 測驗 ID。 |
+| p_updates | jsonb | 是 | 更新物件的 JSON 陣列。 |
+
+`p_updates` 中每個物件：
+
+| 欄位 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| exam_question_id | bigint | 是 | 要更新的 `exam_question.id`。 |
+| order | smallint | 否 | 新的順序值。 |
+| points | decimal(5,2) | 否 | 新的分數值。 |
+
+##### 回傳
+
+`void`
+
+##### 範例（SQL）
+
+```sql
+select public.batch_update_exam_questions(
+  p_exam_id => 10,
+  p_updates => '[
+    {"exam_question_id": 55, "order": 1, "points": 2.0},
+    {"exam_question_id": 56, "order": 2, "points": 1.5}
+  ]'::jsonb
+);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('batch_update_exam_questions', {
+  p_exam_id: 10,
+  p_updates: [
+    { exam_question_id: 55, order: 1, points: 2.0 },
+    { exam_question_id: 56, order: 2, points: 1.5 }
+  ]
+})
+```
+
+##### 備註
+
+- `(exam_id, "order")` 唯一限制為 `DEFERRABLE INITIALLY DEFERRED`，因此同一交易內的順序互換不會衝突。
+- 擁有權檢查失敗時會拋出 `Exam not found or access denied`。
+
 ### 單字卡（函式）
 
 #### 函式：public.get_flashcards — 權限：authenticated
@@ -1084,6 +1482,44 @@ const { data, error } = await supabase.rpc('get_flashcard_stats')
 - `learning` 計算所有 `status != 'mastered'` 的卡片。
 
 ### 書籤與分析（函式）
+
+#### 函式：public.toggle_bookmark — 權限：authenticated
+
+切換當前使用者對題目的書籤狀態。若書籤已存在則移除；否則新增。
+
+##### 權限
+
+`EXECUTE` 授權給 `authenticated`。函式以
+`SECURITY DEFINER` 執行。
+
+##### 參數
+
+| 名稱 | 類型 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| p_question_id | bigint | 是 | 要切換書籤的題目 ID。 |
+
+##### 回傳
+
+`json` 物件 `{ bookmarked: bool }`，表示新的書籤狀態。
+
+##### 範例（SQL）
+
+```sql
+select public.toggle_bookmark(p_question_id => 42);
+```
+
+##### 範例（Supabase JS）
+
+```ts
+const { data, error } = await supabase.rpc('toggle_bookmark', {
+  p_question_id: 42
+})
+```
+
+##### 備註
+
+- 新增書籤時回傳 `{ "bookmarked": true }`。
+- 移除書籤時回傳 `{ "bookmarked": false }`。
 
 #### 函式：public.get_bookmarks — 權限：authenticated
 
