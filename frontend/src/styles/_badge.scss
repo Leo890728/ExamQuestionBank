@@ -1,0 +1,16 @@
+@use "variables" as *;
+@use "mixins" as *;
+
+.badge-default {
+    @include badge-base;
+    background-color: map-get($badge-colors, default, bg-color);
+    color: map-get($badge-colors, default, text-color);
+}
+
+@each $key, $value in $badge-colors {
+    .badge-#{$key} {
+        @include badge-base;
+        background-color: map-get($value, bg-color);
+        color: map-get($value, text-color);
+    }
+}
