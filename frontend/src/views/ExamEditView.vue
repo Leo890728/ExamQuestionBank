@@ -1,1899 +1,1453 @@
 <template>
-  <div class="exam-edit-view">
-    <!-- 上方：考卷資訊表單 -->
-    <ExamForm :exam="exam" :saving="savingExam" @save="handleSaveExam" @cancel="handleCancel" />
-
-
-    <!-- 下方：題目列表全寬 -->
-    <div class="content-container">
-      <QuestionList ref="questionListRef" :questions="allQuestions" :selected-question-id="selectedQuestionId"
-        :loading="loadingQuestions" v-model:total-points="autoPointsTotal"
-        :auto-distribute-loading="autoDistributeLoading" :pending-edits="pendingQuestionEdits"
-        :show-auto-distribute="true" :show-add-question="isAdmin" :tags="tags" :search-results="searchQuestions"
-        :search-loading="searchLoading" :total-search-count="searchTotalCount" @select-question="handleSelectQuestion"
-        @add-question="handleAddQuestion" @add-existing-question="showAddModal = true"
-        @remove-question="handleRemoveQuestion" @auto-distribute="autoDistributePoints"
-        @update:selected-ids="handleSelectedIdsChange" @search-questions="handleSearchQuestions"
-        @load-tags="handleLoadTags" @add-search-results="handleAddSearchResultsToExam" />
-    </div>
-
-    <!-- 編輯題目彈窗 -->
-    <div v-if="isEditQuestionModalVisible" class="modal d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">編輯題目</h5>
-            <button type="button" class="btn-close" @click="closeEditModal" :disabled="savingQuestion"></button>
-          </div>
-          <div class="modal-body">
-            <QuestionEditor v-if="selectedQuestion" :question="selectedQuestion" :exam-question="selectedExamQuestion"
-              :saving="savingQuestion" @save="handleSaveQuestion" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 新增題目的彈窗 -->
-    <AddQuestionModal v-if="showAddModal" :existing-question-ids="existingQuestionIds" @close="showAddModal = false"
-      @add="handleAddQuestionToExam" />
-    <!-- BulkTagEditor and BulkSubjectEditor are moved to AdminQuestionManagement -->
-
-    <!-- 儲存進度 Modal -->
-    <div v-if="isSavingProgressVisible" class="saving-overlay">
-      <div class="saving-modal">
+    <div class="exam-design-page">
         <!-- Header -->
-        <div class="saving-header">
-          <div class="saving-icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" class="saving-icon-spin">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-            </svg>
-          </div>
-          <div>
-            <h3 class="saving-title">儲存進度</h3>
-            <p class="saving-subtitle">{{ savingProgressMessage }}</p>
-          </div>
-        </div>
-
-        <!-- Body -->
-        <div class="saving-body">
-          <!-- 進度資訊 -->
-          <div v-if="savingTotalSteps > 0" class="saving-steps">
-            <span class="saving-current">{{ savingCurrentStep }}</span>
-            <span class="saving-divider">/</span>
-            <span class="saving-total">{{ savingTotalSteps }}</span>
-          </div>
-
-          <!-- 進度條 -->
-          <div class="saving-progress-container">
-            <div class="saving-progress-bar" :style="{ width: savingProgressPercent + '%' }"></div>
-          </div>
-          <div class="saving-percent">{{ savingProgressPercent }}%</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 自動配分 Modal -->
-    <div v-if="isAutoDistributeModalVisible" class="auto-distribute-overlay"
-      @click.self="isAutoDistributeModalVisible = false">
-      <div class="auto-distribute-modal">
-        <!-- Header -->
-        <div class="ad-modal-header">
-          <div class="ad-header-content">
-            <div class="ad-icon-wrapper">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="2" x2="12" y2="6"></line>
-                <line x1="12" y1="18" x2="12" y2="22"></line>
-                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                <line x1="2" y1="12" x2="6" y2="12"></line>
-                <line x1="18" y1="12" x2="22" y2="12"></line>
-                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
-              </svg>
+        <header class="page-header" :class="{ 'has-changes': hasChanges }">
+            <div class="header-left">
+                <span v-if="hasChanges" class="unsaved-icon">⚠</span>
+                <h1 class="page-title">Create New Exam</h1>
+                <template v-if="hasChanges">
+                    <span class="unsaved-sep">·</span>
+                    <span class="unsaved-detail">{{ unsavedSummary }}</span>
+                </template>
             </div>
-            <div>
-              <h3 class="ad-modal-title">自動配分試算</h3>
-              <p class="ad-modal-subtitle">根據總分自動平均分配每題分數</p>
+            <div v-if="hasChanges" class="header-right">
+                <button class="unsaved-btn-discard" @click="handleDiscard">捨棄</button>
+                <button class="unsaved-btn-save" @click="handleSave" :disabled="isSaving">
+                    {{ isSaving ? '儲存中...' : '儲存' }}
+                </button>
             </div>
-          </div>
-          <button class="ad-close-btn" @click="isAutoDistributeModalVisible = false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
+        </header>
 
-        <!-- Body -->
-        <div class="ad-modal-body">
-          <!-- 滿分輸入 -->
-          <div class="ad-input-section">
-            <label for="autoDistributePointsInput" class="ad-input-label">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <path d="M12 20V10"></path>
-                <path d="M18 20V4"></path>
-                <path d="M6 20v-4"></path>
-              </svg>
-              總分設定
-            </label>
-            <div class="ad-input-wrapper">
-              <input id="autoDistributePointsInput" v-model.number="autoPointsTotal" type="number" min="1" step="0.01"
-                class="ad-input" @input="calculateAutoDistribute" />
-              <span class="ad-input-unit">分</span>
-            </div>
-          </div>
+        <!-- Content Area -->
+        <main class="content-area">
+            <!-- Left Panel -->
+            <aside class="left-panel">
+                <!-- Exam Info Card -->
+                <section class="card info-card">
+                    <div class="card-header info-header">
+                        <div class="info-icon"></div>
+                        <h2 class="info-title">Exam Information</h2>
+                    </div>
+                    <div v-if="examInfo" class="card-body form-body">
+                        <div class="form-group name-group">
+                            <label>Exam Name</label>
+                            <input type="text" v-model="examInfo.name" placeholder="Enter exam name" />
+                        </div>
+                        <div class="form-group desc-group">
+                            <label>Description</label>
+                            <textarea v-model="examInfo.description" placeholder="Enter description"></textarea>
+                        </div>
+                        <div class="form-group time-group">
+                            <label>Time Limit</label>
+                            <input type="number" v-model="examInfo.time_limit" placeholder="Minutes" />
+                        </div>
+                    </div>
+                </section>
 
-          <!-- 試算結果 -->
-          <div v-if="autoDistributeQuotaList.length > 0" class="ad-result-section">
-            <div class="ad-result-header">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-              </svg>
-              試算結果
-            </div>
-            <div class="ad-result-grid">
-              <div class="ad-result-item">
-                <div class="ad-result-label">題目數量</div>
-                <div class="ad-result-value">{{ autoDistributeQuotaList.length }} <span class="ad-result-unit">題</span>
+                <!-- Stats Card -->
+                <section class="card stats-card">
+                    <div class="card-header stats-header">
+                        <h2 class="stats-title">Statistics</h2>
+                    </div>
+                    <div class="card-body stats-body">
+                        <div class="counters">
+                            <div class="counter-item">
+                                <span class="count">{{ statTotalQuestions }}</span>
+                                <span class="label">Questions</span>
+                            </div>
+                            <div class="counter-item">
+                                <span class="count">{{ statTotalScore }}</span>
+                                <span class="label">Total Score</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <Pie id="statsChart" :data="questionDifficultyChartData" :options="chartOptions"></Pie>
+                    </div>
+                </section>
+            </aside>
+
+            <!-- Right Panel -->
+            <section class="right-panel">
+                <div ref="tabBarSentinel" class="sentinel"></div>
+                <!-- Tab Bar -->
+                <div class="tab-bar" :class="{ 'is-sticky': isTabBarSticky }">
+                    <div class="tab-group">
+                        <button class="tab-item" :class="{ active: activeTab === 'questions' }"
+                            @click="activeTab = 'questions'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                            </svg>
+                            考卷題目
+                            <span class="tab-badge">{{ examQuestions.length }}</span>
+                        </button>
+                        <button class="tab-item" :class="{ active: activeTab === 'search' }"
+                            @click="activeTab = 'search'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.3-4.3" />
+                            </svg>
+                            搜尋題庫
+                        </button>
+                    </div>
                 </div>
-              </div>
-              <div class="ad-result-item">
-                <div class="ad-result-label">平均配分</div>
-                <div class="ad-result-value">{{ (autoPointsTotal / autoDistributeQuotaList.length).toFixed(2) }} <span
-                    class="ad-result-unit">分/題</span></div>
-              </div>
-            </div>
-          </div>
 
-          <!-- 提示訊息 -->
-          <div v-if="autoDistributeMessage" class="ad-message">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            {{ autoDistributeMessage }}
-          </div>
-        </div>
+                <!-- 考卷題目 Tab -->
+                <template v-if="activeTab === 'questions'">
+                    <div class="toolbar">
+                        <div class="filter-row">
+                            <input type="text" class="search-box" placeholder="搜尋題目..." v-model="filterContent" />
+                            <select class="filter-select" v-model="filterType">
+                                <option value="All Types">所有題型</option>
+                                <option v-for="type in QuestionTypeList" :value="type">{{ type }}</option>
+                            </select>
+                            <select class="filter-select" v-model="filterDifficulty">
+                                <option value="All Difficulty">所有難度</option>
+                                <option v-for="difficulty in QuestionDifficultyList" :value="difficulty">{{ difficulty
+                                    }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
 
-        <!-- Footer -->
-        <div class="ad-modal-footer">
-          <button class="ad-btn ad-btn-secondary" @click="isAutoDistributeModalVisible = false">
-            取消
-          </button>
-          <button class="ad-btn ad-btn-primary" @click="applyAutoDistribute" :disabled="autoDistributeLoading">
-            <svg v-if="!autoDistributeLoading" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            <div v-else class="ad-btn-spinner"></div>
-            {{ autoDistributeLoading ? '套用中...' : '確認配分' }}
-          </button>
-        </div>
-      </div>
+                    <TableList :showHeader="false" :items="filterQuestions()" :columns="tableColumns"
+                        :row-class="getRowClass" :draggable="true" :showPagination="true" :sort-key="sortKey"
+                        :sort-order="sortOrder" @sort-change="handleSortChange" @reorder="handleReorder">
+                        <template #cell-content="{ item }">
+                            <div class="col-content">
+                                <div class="q-text">{{ item.content }}</div>
+                                <div class="q-meta" v-if="item.category && item.subject">{{ item.category }} •
+                                    {{ item.subject }}</div>
+                            </div>
+                        </template>
+                        <template #cell-type="{ item }">
+                            <div class="col-type">
+                                <span class="badge-default">{{ item.type === 'multipleChoice' ? 'MCQ'
+                                    : 'Essay' }}</span>
+                            </div>
+                        </template>
+                        <template #cell-difficulty="{ item }">
+                            <div class="col-diff">
+                                <span :class="'badge-' + item.difficulty">{{ item.difficulty }}</span>
+                            </div>
+                        </template>
+                        <template #cell-points="{ item }">
+                            <input class="score-input" type="number" :value="item.points"
+                                @change="handUpdateScore(item.id, $event)" @click.stop @mousedown.stop />
+                        </template>
+                        <template #cell-actions="{ item }">
+                            <div class="col-actions">
+                                <button class="action-btn danger" title="移除題目"
+                                    @click.stop="handleToggleAddQuestion(item)">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </template>
+                        <template #selection-actions="{ selectedIds, clearSelection }">
+                            <button class="btn-warning btn-sm" @click="openBatchScore(selectedIds)">
+                                批次修改分數
+                            </button>
+                            <button class="btn-danger btn-sm"
+                                @click="handleBulkRemoveFromExam(selectedIds, clearSelection)">
+                                刪除題目
+                            </button>
+                        </template>
+                    </TableList>
+                </template>
+
+                <!-- 搜尋題庫 Tab -->
+                <template v-if="activeTab === 'search'">
+                    <QuestionFilterPanel v-model="searchFilters" :loading="searchLoading"
+                        :total-count="searchTotalCount" :collapsible="true" :default-collapsed="false" title="篩選條件"
+                        @search="handleSearch" @reset="handleResetSearch" />
+
+                    <ItemList :items="searchResults" :loading="searchLoading" :show-header="false" :selectable="true"
+                        :show-select-all="true" item-unit="題" empty-text="尚無搜尋結果" empty-hint="請使用上方篩選條件搜尋題目"
+                        content-field="content" :show-pagination="true" :page-size="searchPageSize"
+                        :current-page="searchCurrentPage" :paginationState="searchPaginationState"
+                        @update:selected-ids="handleSearchSelectedIdsChange" @item-click="handleSearchItemClick"
+                        @page-change="handleSearchPageChange" @size-change="handleSearchPageSizeChange">
+                        <template #item-badges="{ item }">
+                            <span class="badge badge-subject">{{ item.subject || '未分類' }}</span>
+                            <span class="badge" :class="'badge-' + item.difficulty">
+                                {{ difficultyLabel(item.difficulty) }}
+                            </span>
+                            <span v-for="tag in (item.tags || []).slice(0, 2)" :key="tag.id" class="badge badge-tag">
+                                {{ tag.name }}
+                            </span>
+                            <span v-if="(item.tags || []).length > 2" class="badge badge-more">
+                                +{{ item.tags.length - 2 }}
+                            </span>
+                        </template>
+                        <template #item-actions="{ item }">
+                            <button class="action-btn" title="檢視" @click.stop="handlePreviewQuestion(item)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </button>
+                            <button class="action-btn action-btn-add" :class="{ added: isQuestionInExam(item) }"
+                                :title="isQuestionInExam(item) ? '已加入' : '加入考卷'"
+                                @click.stop="handleToggleAddQuestion(item)">
+                                <svg v-if="!isQuestionInExam(item)" xmlns="http://www.w3.org/2000/svg" width="16"
+                                    height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14" />
+                                    <path d="M12 5v14" />
+                                </svg>
+                                <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </button>
+                        </template>
+                        <template #selection-actions="{ selectedIds, clearSelection }">
+                            <button class="btn-primary btn-sm"
+                                @click="handleBulkAddToExam(selectedIds, clearSelection)">
+                                加入考卷
+                            </button>
+                        </template>
+                    </ItemList>
+                </template>
+            </section>
+        </main>
     </div>
-  </div>
+
+    <!-- Question Preview Modal -->
+    <Teleport to="body">
+        <QuestionPreviewModal :visible="showPreviewModal" :question="previewQuestion"
+            :is-in-exam="previewQuestion ? isQuestionInExam(previewQuestion) : false" @close="showPreviewModal = false"
+            @add="handleAddPreviewedQuestion" />
+    </Teleport>
+
+    <!-- Batch Score Editor Modal -->
+    <Teleport to="body">
+        <BatchScoreEditor v-if="showBatchScore" :questions="batchScoreQuestions" :exam-total-score="statTotalScore"
+            @close="showBatchScore = false" @applied="handleBatchScoreApplied" />
+    </Teleport>
+
+    <!-- Leave Page Modal -->
+    <Teleport to="body">
+        <div v-if="showLeaveModal" class="modal-overlay" @click.self="cancelLeave">
+            <div class="modal-card">
+                <!-- Header -->
+                <div class="modal-header">
+                    <div class="modal-icon">⚠</div>
+                    <h3 class="modal-title">離開頁面？</h3>
+                    <p class="modal-desc">您有未儲存的變更，離開後將會遺失。</p>
+                </div>
+                <!-- Body -->
+                <div class="modal-body">
+                    <div class="modal-summary">
+                        <span class="summary-title">未儲存的變更：</span>
+                        <div v-if="questionChanges.addedQuestions.length" class="summary-row">
+                            <span class="summary-dot added"></span>
+                            新增 {{ questionChanges.addedQuestions.length }} 題
+                        </div>
+                        <div v-if="questionChanges.removedQuestions.length" class="summary-row">
+                            <span class="summary-dot removed"></span>
+                            移除 {{ questionChanges.removedQuestions.length }} 題
+                        </div>
+                        <div v-if="questionChanges.orderChanged.length" class="summary-row">
+                            <span class="summary-dot modified"></span>
+                            {{ questionChanges.orderChanged.length }} 題順序變更
+                        </div>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="modal-footer">
+                    <button class="modal-btn-save" @click="saveAndLeave">儲存並離開</button>
+                    <button class="modal-btn-discard" @click="discardAndLeave">不儲存，直接離開</button>
+                    <button class="modal-btn-cancel" @click="cancelLeave">取消</button>
+                </div>
+            </div>
+        </div>
+    </Teleport>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, inject } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useExamStore } from '@/stores/examStore'
-import ExamForm from '../components/ExamForm.vue'
-import QuestionEditor from '../components/QuestionEditor.vue'
-import QuestionList from '../components/QuestionList.vue'
-import AddQuestionModal from '../components/AddQuestionModal.vue'
-import questionService from '../services/questionService'
-import tagService from '../services/tagService'
-import { usePdfImportStore } from '../stores/pdfImport'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { Pie } from "vue-chartjs"
+import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 
-const currentUser = inject('currentUser', null)
+import { useExamStore } from '@/stores/test/exam';
+import { useQuestionStore } from '@/stores/test/question';
+import { QuestionDifficultyList, QuestionTypeList } from '@/models/Question'
 
-const route = useRoute()
-const router = useRouter()
-const pdfImportStore = usePdfImportStore()
+import TableList from '@/components/common/TableList.vue'
+import ItemList from '@/components/common/ItemList.vue'
+import QuestionFilterPanel from '@/components/common/QuestionFilterPanel.vue'
+import QuestionPreviewModal from '@/components/QuestionPreviewModal.vue'
+import BatchScoreEditor from '@/components/BatchScoreEditor.vue'
 
-const examStore = useExamStore()
+import { useSticky } from '@/composables/useSticky'
 
-// 考卷資料
-const exam = ref(null)
-const examQuestions = ref([])
-const autoPointsTotal = ref(100)
-const autoDistributeLoading = ref(false)
-const pendingQuestionEdits = ref({})
+import "@/styles/main.scss";
 
-// 暫存的 PDF 解析題目（尚未儲存到資料庫）
-const pendingQuestions = ref([])
+// ChartJS
+ChartJS.register(Title, Tooltip, Legend, ArcElement);
 
-// 暫存的現有題目連結（已存在的題目，只需建立考卷關聯）
-// 格式: [{ questionId, questionContent, questionSubject, points }]
-const pendingExamLinks = ref([])
+// Route
+const route = useRoute();
+const router = useRouter();
 
-// 選中的題目
-const selectedQuestionId = ref(null)
-const selectedQuestion = ref(null)
-const selectedExamQuestion = ref(null)
+// Store
+const examStore = useExamStore();
+const questionStore = useQuestionStore();
 
-// 多選的題目 IDs
-const selectedQuestionIds = ref([])
-const questionListRef = ref(null)
+const {
+    examInfo, examQuestions,
+    hasChanges, questionChanges, unsavedSummary
+} = storeToRefs(examStore)
 
-// 載入和儲存狀態
-const loadingQuestions = ref(false)
-const savingExam = ref(false)
-const savingQuestion = ref(false)
-const isEditQuestionModalVisible = ref(false)
+const questionDifficultyChartData = computed(() => {
+    const qs = examQuestions.value || []
+    const easyCount = qs.filter(q => q.difficulty === 'easy').length;
+    const mediumCount = qs.filter(q => q.difficulty === 'normal').length;
+    const hardCount = qs.filter(q => q.difficulty === 'hard').length;
+    const insaneCount = qs.filter(q => q.difficulty === 'insane').length;
 
-// 儲存進度 Modal
-const isSavingProgressVisible = ref(false)
-const savingProgressMessage = ref('準備儲存...')
-const savingProgressPercent = ref(0)
-const savingCurrentStep = ref(0)
-const savingTotalSteps = ref(0)
-const savingStepType = ref('') // 'exam', 'questions', 'updates'
+    const mcqCount = qs.filter(q => q.type === 'multipleChoice').length
+    const essayCount = qs.filter(q => q.type !== 'multipleChoice').length
 
-// 新增題目彈窗
-const showAddModal = ref(false)
+    return {
+        labels: ['簡單', '普通', '困難', '極難'],
+        datasets: [
+            // 內圈 - 難度分佈
+            {
+                label: '難度分佈',
+                data: [easyCount, mediumCount, hardCount, insaneCount],
+                backgroundColor: ['#dcfce7', '#dbeafe', '#ffedd5', '#fee2e2'],
+                weight: 1,
+            },
+            // 外圈 - 題型分佈
+            {
+                label: '題型分佈',
+                data: [mcqCount, essayCount],
+                backgroundColor: ['#476996', '#94a3b8'],
+                weight: 1,
+            },
+        ],
+    };
+});
 
-// 自動配分 Modal
-const isAutoDistributeModalVisible = ref(false)
-const autoDistributeQuotaList = ref([])
-const autoDistributeMessage = ref('')
+const datasetLabels = [
+    ['簡單', '普通', '困難', '極難'],
+    ['選擇題', '問答題'],
+]
 
-// 搜尋題目相關
-const tags = ref([])
-const searchQuestions = ref([])
-const searchLoading = ref(false)
-const searchTotalCount = ref(0)
-
-// 計算 examId
-const examId = computed(() => {
-  return route.params.id ? parseInt(route.params.id) : null
-})
-
-// 檢查是否為管理員
-const isAdmin = computed(() => {
-  return currentUser?.value?.isAdmin || false
-})
-
-// 合併已儲存的題目和暫存的題目
-const allQuestions = computed(() => {
-  // 已儲存的題目
-  const saved = examQuestions.value.map(eq => ({
-    ...eq,
-    isPending: false,
-    isExistingLink: false
-  }))
-
-  // 暫存的新題目（需要建立題目 + 關聯）
-  const pending = pendingQuestions.value.map((q, index) => ({
-    id: `pending-${index}`,
-    question: null,
-    order: q.order !== undefined ? q.order : (saved.length + index + 1),
-    points: q.points || 0,
-    question_content: q.content || q.question || '',
-    question_subject: q.subject || exam.value?.name || '',
-    question_category: q.category || '',
-    isPending: true,
-    isExistingLink: false,
-    pendingData: q // 保存完整的暫存資料
-  }))
-
-  // 暫存的現有題目連結（只需建立關聯）
-  const links = pendingExamLinks.value.map((link, index) => ({
-    id: `link-${index}`,
-    question: link.questionId,
-    order: link.order !== undefined ? link.order : (saved.length + pending.length + index + 1),
-    points: link.points || 1,
-    question_content: link.questionContent || '',
-    question_subject: link.questionSubject || '',
-    question_category: link.questionCategory || '',
-    isPending: false,
-    isExistingLink: true,
-    linkData: link
-  }))
-
-  return [...saved, ...pending, ...links]
-})
-
-// 已存在的題目 IDs（用於排除）
-const existingQuestionIds = computed(() => {
-  const savedIds = examQuestions.value
-    .filter(eq => eq.question)
-    .map(eq => eq.question)
-
-  // Also include pending exam links
-  const pendingLinkIds = pendingExamLinks.value.map(link => link.questionId)
-
-  return [...savedIds, ...pendingLinkIds]
-})
-
-// 載入考卷資料
-const loadExam = async () => {
-  if (!examId.value) {
-    // 新建模式
-    exam.value = null
-    return
-  }
-
-  try {
-    const response = await examStore.getExam(examId.value)
-    exam.value = response.data
-    examQuestions.value = response.data.exam_questions || []
-  } catch (error) {
-    console.error('載入考卷失敗:', error)
-    alert('載入考卷失敗')
-  }
-}
-
-// 儲存考卷
-const handleSaveExam = async (examData) => {
-  savingExam.value = true
-  isSavingProgressVisible.value = true
-  savingProgressMessage.value = '準備儲存...'
-  savingProgressPercent.value = 0
-
-  try {
-    let currentExamId = examId.value
-
-    savingProgressMessage.value = '儲存考卷資訊...'
-    savingProgressPercent.value = 10
-
-    if (currentExamId) {
-      // 更新現有考卷
-      const response = await examStore.updateExam(currentExamId, examData)
-      exam.value = response.data
-    } else {
-      // 建立新考卷
-      const response = await examStore.createExam(examData)
-      exam.value = response.data
-      currentExamId = response.data.id
-      // 根據使用者角色導向不同頁面
-      if (isAdmin.value) {
-        // 管理員導向管理員編輯頁面
-        await router.replace(`/admin/exams/${response.data.id}/edit`)
-      } else {
-        // 普通使用者導向普通編輯頁面
-        await router.replace(`/exams/${response.data.id}/edit`)
-      }
-    }
-
-    const summaryParts = []
-    let shouldReload = false
-
-    // 如果有暫存的題目，批次建立並加入考卷（改用 bulk API）
-    if (pendingQuestions.value.length > 0) {
-      savingProgressMessage.value = `建立題目中`
-      savingProgressPercent.value = 20
-      savingStepType.value = 'questions'
-      savingTotalSteps.value = pendingQuestions.value.length
-      savingCurrentStep.value = 0
-
-      console.log(`開始批次建立 ${pendingQuestions.value.length} 個題目...`)
-      const createPayload = []
-      const meta = [] // keep mapping of index -> order & points for later adding to exam
-      let skipCount = 0
-
-      for (let i = 0; i < pendingQuestions.value.length; i++) {
-        const questionData = pendingQuestions.value[i]
-        const questionPayload = {
-          subject: questionData.subject,
-          category: questionData.category,
-          question_type: questionData.question_type || '選擇題',
-          difficulty: questionData.difficulty || 'medium',
-          content: questionData.content,
-          explanation: questionData.explanation,
-          status: 'published',
-          options: questionData.options,
-          tag_ids: questionData.tag_ids || []
-        }
-
-        // basic validation: ensure required fields exist
-        if (!questionPayload.content || !questionPayload.content.trim() || !questionPayload.subject || !questionPayload.subject.trim()) {
-          console.warn(`跳過建立題目 #${i + 1}: content or subject 為空`)
-          skipCount++
-          continue
-        }
-
-        createPayload.push(questionPayload)
-        meta.push({ index: i, order: questionData.order !== undefined ? questionData.order : (examQuestions.value.length + i + 1), points: questionData.points })
-      }
-
-      let successCount = 0
-      let failCount = 0
-      if (createPayload.length > 0) {
-        try {
-          const res = await questionService.bulkCreateQuestions(createPayload)
-          const results = res.data?.results || res.data
-          for (let i = 0; i < results.length; i++) {
-            const r = results[i]
-            const m = meta[i]
-
-            // 更新進度
-            savingCurrentStep.value = i + 1
-            savingProgressMessage.value = `建立題目中 (${i + 1}/${results.length}題)`
-            savingProgressPercent.value = 20 + Math.floor((i / results.length) * 30)
-
-            if (r.success) {
-              // Add created question to exam
-              try {
-                await examStore.addQuestionToExam(currentExamId, {
-                  question: r.id,
-                  order: m.order,
-                  points: m.points
-                })
-                successCount++
-              } catch (err) {
-                console.error('加入考卷失敗', err)
-                failCount++
-              }
-            } else {
-              failCount++
-              const detail = r.errors
-              summaryParts.push(`${r.index !== undefined ? `第 ${r.index + 1} 題` : '某題'} 建立失敗: ${JSON.stringify(detail)}`)
+const chartOptions = {
+    responsive: true,
+    plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+            callbacks: {
+                title: (items) => {
+                    if (!items.length) return ''
+                    const { datasetIndex, dataIndex } = items[0]
+                    return datasetLabels[datasetIndex]?.[dataIndex] || ''
+                },
+                label: (ctx) => {
+                    const label = datasetLabels[ctx.datasetIndex]?.[ctx.dataIndex] || ''
+                    const value = ctx.raw || 0
+                    return `${label}: ${value} 題`
+                }
             }
-          }
-        } catch (err) {
-          // fallback: if bulk create failed entirely, try single create to get more info - but for now, treat as failed
-          console.error('批次建立題目失敗', err)
-          summaryParts.push(`批次建立題目失敗: ${err.response?.data || err.message}`)
-          failCount += createPayload.length
         }
-      }
-
-      // 清空暫存列表（已加入或嘗試加入）
-      pendingQuestions.value = []
-      shouldReload = true
-      summaryParts.push(`題目建立：成功 ${successCount} 題，失敗 ${failCount} 題，略過 ${skipCount} 題`)
-    }
-
-    // 處理暫存的現有題目連結（不需建立題目，只需建立關聯）
-    if (pendingExamLinks.value.length > 0) {
-      savingProgressMessage.value = `加入現有題目中`
-      savingProgressPercent.value = 45
-
-      let linkSuccessCount = 0
-      let linkFailCount = 0
-      const currentOrder = examQuestions.value.length + (pendingQuestions.value.length || 0)
-
-      for (let i = 0; i < pendingExamLinks.value.length; i++) {
-        const link = pendingExamLinks.value[i]
-        savingCurrentStep.value = i + 1
-        savingProgressMessage.value = `加入現有題目中 (${i + 1}/${pendingExamLinks.value.length}題)`
-
-        try {
-          await examStore.addQuestionToExam(currentExamId, {
-            question: link.questionId,
-            order: link.order !== undefined ? link.order : (currentOrder + i + 1),
-            points: link.points || 1
-          })
-          linkSuccessCount++
-        } catch (err) {
-          console.error('加入現有題目失敗', err)
-          linkFailCount++
-        }
-      }
-
-      // 清空暫存連結列表
-      pendingExamLinks.value = []
-      shouldReload = true
-      if (linkSuccessCount > 0 || linkFailCount > 0) {
-        summaryParts.push(`現有題目加入：成功 ${linkSuccessCount} 題，失敗 ${linkFailCount} 題`)
-      }
-    }
-
-    savingProgressMessage.value = '更新題目設定中'
-    savingProgressPercent.value = 50
-    savingStepType.value = 'updates'
-
-    const { questionUpdates, settingUpdates, errors: editErrors } = await applyPendingQuestionEdits(currentExamId)
-    if (questionUpdates || settingUpdates || (editErrors && editErrors.length)) {
-      shouldReload = true
-      savingProgressPercent.value = 75
-      summaryParts.push(`暫存更新：題目內容 ${questionUpdates} 題、配分/順序 ${settingUpdates} 題`)
-      if (editErrors && editErrors.length) {
-        editErrors.forEach(err => {
-          summaryParts.push(`更新失敗：${JSON.stringify(err)}`)
-        })
-      }
-    }
-
-    if (shouldReload) {
-      savingProgressMessage.value = '重新載入資料...'
-      savingProgressPercent.value = 85
-      await loadExam()
-    }
-
-    savingProgressMessage.value = '完成！'
-    savingProgressPercent.value = 100
-
-    const baseMessage = summaryParts.length
-      ? `考卷儲存成功！\n${summaryParts.join('\n')}`
-      : '考卷儲存成功'
-
-    // 1 秒後關閉 Modal
-    setTimeout(() => {
-      isSavingProgressVisible.value = false
-      savingProgressPercent.value = 0
-      savingProgressMessage.value = '準備儲存...'
-      savingCurrentStep.value = 0
-      savingTotalSteps.value = 0
-      savingStepType.value = ''
-      alert(baseMessage)
-    }, 1000)
-  } catch (error) {
-    console.error('儲存考卷失敗:', error)
-    console.error('錯誤詳情:', error.response?.data)
-    console.error('發送的資料:', examData)
-    isSavingProgressVisible.value = false
-    savingProgressPercent.value = 0
-    savingProgressMessage.value = '準備儲存...'
-    alert('儲存考卷失敗：' + JSON.stringify(error.response?.data || error.message))
-  } finally {
-    savingExam.value = false
-  }
+    },
+    cutout: '30%',
 }
 
-// PDF import dialog trigger removed from toolbar.
-
-// 取消編輯
-const handleCancel = () => {
-  router.push('/admin/exams')
-}
-
-const closeEditModal = () => {
-  isEditQuestionModalVisible.value = false
-  // 可選：延遲清除選中題目以避免 modal 關閉時閃爍
-  setTimeout(() => {
-    if (!isEditQuestionModalVisible.value) {
-      selectedQuestionId.value = null
-      selectedQuestion.value = null
-      selectedExamQuestion.value = null
-    }
-  }, 300)
-}
-
-const handleSelectQuestion = async (examQuestion) => {
-  // If it's a search result, don't allow editing (they need to be added to exam first)
-  if (examQuestion.isSearchResult) {
-    alert('請先將題目加入考卷後再進行編輯')
-    return
-  }
-
-  selectedQuestionId.value = examQuestion.question
-  selectedExamQuestion.value = {
-    ...examQuestion,
-    ...(pendingQuestionEdits.value[examQuestion.id]?.examSettings || {})
-  }
-
-  // 如果是暫存題目，直接使用暫存的資料
-  if (examQuestion.isPending && examQuestion.pendingData) {
-    selectedQuestion.value = {
-      id: null,
-      subject: examQuestion.pendingData.subject,
-      category: examQuestion.pendingData.category,
-      question_type: examQuestion.pendingData.question_type || '選擇題',
-      difficulty: examQuestion.pendingData.difficulty || 'medium',
-      content: examQuestion.pendingData.content,
-      explanation: examQuestion.pendingData.explanation,
-      status: 'draft',
-      options: examQuestion.pendingData.options || [],
-      tag_ids: examQuestion.pendingData.tag_ids || [],
-      tags: null // 標籤從 tag_ids 解析，讓 QuestionEditor 自行處理
-    }
-    isEditQuestionModalVisible.value = true
-    return
-  }
-
-  // 載入完整的題目資料（已儲存的題目）
-  if (!examQuestion.question) return
-
-  loadingQuestions.value = true
-  try {
-    const response = await questionService.getQuestion(examQuestion.question)
-    const pendingEdit = pendingQuestionEdits.value[examQuestion.id]
-    selectedQuestion.value = pendingEdit?.questionData
-      ? { ...response.data, ...pendingEdit.questionData }
-      : response.data
-    // 打開編輯 modal
-    isEditQuestionModalVisible.value = true
-  } catch (error) {
-    console.error('載入題目失敗:', error)
-    alert('載入題目失敗')
-  } finally {
-    loadingQuestions.value = false
-  }
-}
-
-// 重新排序暫存題目（當修改 order 時自動調整其他暫存題目）
-// 注意：已保存的題目會由後端 API 自動重排序
-const reorderPendingQuestions = (currentId, newOrder, oldOrder) => {
-  // 獲取所有題目（已保存的和暫存的）
-  const allQs = allQuestions.value
-
-  // 如果順序沒變，不需要重排
-  if (newOrder === oldOrder) return
-
-  // 只調整暫存題目的順序（已保存的題目會由後端自動處理）
-  allQs.forEach(q => {
-    if (q.id === currentId) return // 跳過當前題目
-    if (!q.isPending) return // 跳過已保存的題目（後端會處理）
-
-    const qOrder = q.order || 0
-
-    if (newOrder < oldOrder) {
-      // 向前移動：原本在 [newOrder, oldOrder) 之間的題目順序 +1
-      if (qOrder >= newOrder && qOrder < oldOrder) {
-        const idx = parseInt(q.id.replace('pending-', ''))
-        if (pendingQuestions.value[idx]) {
-          pendingQuestions.value[idx].order = qOrder + 1
-        }
-      }
-    } else {
-      // 向後移動：(oldOrder, newOrder] 之間的題目順序 -1
-      if (qOrder > oldOrder && qOrder <= newOrder) {
-        const idx = parseInt(q.id.replace('pending-', ''))
-        if (pendingQuestions.value[idx]) {
-          pendingQuestions.value[idx].order = qOrder - 1
-        }
-      }
-    }
-  })
-}
-
-const queueExamQuestionEdit = (examQuestionId, payload) => {
-  const current = pendingQuestionEdits.value[examQuestionId] || {}
-
-  pendingQuestionEdits.value = {
-    ...pendingQuestionEdits.value,
-    [examQuestionId]: {
-      questionId: payload.questionId || current.questionId,
-      questionData: payload.questionData || current.questionData,
-      examSettings: payload.examSettings
-        ? { ...(current.examSettings || {}), ...payload.examSettings }
-        : current.examSettings
-    }
-  }
-}
-
-const applyPendingQuestionEdits = async (currentExamId) => {
-  if (!currentExamId) {
-    return { questionUpdates: 0, settingUpdates: 0 }
-  }
-
-  const entries = Object.entries(pendingQuestionEdits.value)
-  if (!entries.length) {
-    return { questionUpdates: 0, settingUpdates: 0 }
-  }
-
-  let questionUpdates = 0
-  let settingUpdates = 0
-  const errors = []
-
-  for (let idx = 0; idx < entries.length; idx++) {
-    const [examQuestionId, edit] = entries[idx]
-
-    // 更新進度
-    savingCurrentStep.value = idx + 1
-    savingProgressMessage.value = `更新題目設定中 (${idx + 1}/${entries.length}題)`
-    savingProgressPercent.value = 50 + Math.floor((idx / entries.length) * 25)
-
-    if (edit.questionData && edit.questionId) {
-      try {
-        await questionService.updateQuestion(edit.questionId, edit.questionData)
-        questionUpdates += 1
-      } catch (err) {
-        console.error('更新題目失敗:', err)
-        errors.push({ id: edit.questionId, error: err.response?.data || err.message })
-      }
-    }
-
-    if (edit.examSettings) {
-      const payload = {}
-      if (edit.examSettings.order !== undefined) {
-        payload.order = edit.examSettings.order
-      }
-      if (edit.examSettings.points !== undefined) {
-        payload.points = edit.examSettings.points
-      }
-
-      if (Object.keys(payload).length > 0) {
-        try {
-          await examStore.updateExamQuestion(currentExamId, {
-            exam_question_id: Number(examQuestionId),
-            ...payload
-          })
-          settingUpdates += 1
-        } catch (err) {
-          console.error('更新考卷題目設定失敗:', err)
-          errors.push({ exam_question_id: Number(examQuestionId), error: err.response?.data || err.message })
-        }
-      }
-    }
-  }
-
-  pendingQuestionEdits.value = {}
-  return { questionUpdates, settingUpdates, errors }
-}
-
-// 儲存題目
-const handleSaveQuestion = async ({ questionData, examSettings }) => {
-  savingQuestion.value = true
-  try {
-    // 如果是暫存題目，只更新暫存資料
-    if (selectedExamQuestion.value?.isPending) {
-      const pendingId = selectedExamQuestion.value.id
-      const index = parseInt(pendingId.replace('pending-', ''))
-
-      if (pendingQuestions.value[index]) {
-        const oldOrder = pendingQuestions.value[index].order || (examQuestions.value.length + index + 1)
-        const newOrder = examSettings?.order || oldOrder
-
-        // 如果順序改變了，重新排序其他暫存題目
-        if (newOrder !== oldOrder) {
-          reorderPendingQuestions(pendingId, newOrder, oldOrder)
-        }
-
-        // 更新暫存題目的資料
-        pendingQuestions.value[index] = {
-          ...pendingQuestions.value[index],
-          subject: questionData.subject,
-          category: questionData.category,
-          question_type: questionData.question_type,
-          difficulty: questionData.difficulty,
-          tag_ids: questionData.tag_ids || pendingQuestions.value[index].tag_ids || [],
-          content: questionData.content,
-          explanation: questionData.explanation,
-          options: questionData.options,
-          points: examSettings?.points || pendingQuestions.value[index].points,
-          order: newOrder
-        }
-
-        alert('暫存題目已更新\n請儲存考卷以建立此題目')
-
-        // 重新選擇這個題目以刷新顯示
-        await handleSelectQuestion(selectedExamQuestion.value)
-      }
-      return
-    }
-
-    if (!selectedExamQuestion.value || !selectedQuestionId.value) return
-
-    queueExamQuestionEdit(selectedExamQuestion.value.id, {
-      questionId: selectedQuestionId.value,
-      questionData,
-      examSettings: examSettings || undefined
-    })
-
-    const eqIndex = examQuestions.value.findIndex(eq => eq.id === selectedExamQuestion.value.id)
-    if (eqIndex !== -1) {
-      const current = examQuestions.value[eqIndex]
-      examQuestions.value[eqIndex] = {
-        ...current,
-        question_content: questionData.content,
-        question_subject: questionData.subject,
-        question_category: questionData.category,
-        points: examSettings?.points ?? current.points,
-        order: examSettings?.order ?? current.order
-      }
-    }
-
-    selectedExamQuestion.value = {
-      ...selectedExamQuestion.value,
-      points: examSettings?.points ?? selectedExamQuestion.value.points,
-      order: examSettings?.order ?? selectedExamQuestion.value.order,
-      question_content: questionData.content,
-      question_subject: questionData.subject,
-      question_category: questionData.category
-    }
-
-    selectedQuestion.value = selectedQuestion.value
-      ? { ...selectedQuestion.value, ...questionData }
-      : { ...questionData }
-
-    alert('變更已暫存，請於儲存考卷後套用至資料庫。')
-  } catch (error) {
-    console.error('儲存題目失敗:', error)
-    alert('儲存題目失敗：' + (error.response?.data?.message || error.message))
-  } finally {
-    savingQuestion.value = false
-  }
-}
-
-// 新增空白題目
-const handleAddQuestion = () => {
-  // 創建一個新的空白題目到 pending 列表
-  const newQuestion = {
-    content: '',
-    subject: exam.value?.name || '未分類',
-    category: '選擇題',
-    question_type: '選擇題',
-    difficulty: 'medium',
-    tag_ids: [],
-    explanation: '',
-    options: [
-      { content: '', is_correct: false },
-      { content: '', is_correct: false },
-      { content: '', is_correct: false },
-      { content: '', is_correct: false }
-    ],
-    points: 1
-  }
-
-  // 加入到暫存列表
-  pendingQuestions.value.push(newQuestion)
-
-  // 自動選中這個新題目
-  const newIndex = pendingQuestions.value.length - 1
-  const newExamQuestion = {
-    id: `pending-${newIndex}`,
-    question: null,
-    order: examQuestions.value.length + newIndex + 1,
-    points: newQuestion.points,
-    question_content: newQuestion.content,
-    question_subject: newQuestion.subject,
-    question_category: newQuestion.category,
-    isPending: true,
-    pendingData: newQuestion
-  }
-
-  handleSelectQuestion(newExamQuestion)
-}
-
-// 將題目新增到考卷（支援多選）
-const handleAddQuestionToExam = async (questionIds, points) => {
-  if (!examId.value) return
-
-  // 確保 questionIds 是陣列
-  const ids = Array.isArray(questionIds) ? questionIds : [questionIds]
-
-  try {
-    let successCount = 0
-    let failCount = 0
-    const currentOrder = examQuestions.value.length
-
-    for (let i = 0; i < ids.length; i++) {
-      try {
-        await examStore.addQuestionToExam(examId.value, {
-          question: ids[i],
-          order: currentOrder + i + 1,
-          points: points
-        })
-        successCount++
-      } catch (err) {
-        console.error(`新增題目 ${ids[i]} 失敗:`, err)
-        failCount++
-      }
-    }
-
-    showAddModal.value = false
-
-    if (failCount === 0) {
-      alert(`成功新增 ${successCount} 題`)
-    } else {
-      alert(`新增完成：成功 ${successCount} 題，失敗 ${failCount} 題`)
-    }
-
-    // 重新載入考卷資料
-    await loadExam()
-  } catch (error) {
-    console.error('新增題目失敗:', error)
-    alert('新增題目失敗：' + (error.response?.data?.message || error.message))
-  }
-}
-
-// 處理多選變更
-const handleSelectedIdsChange = (ids) => {
-  selectedQuestionIds.value = ids
-}
-
-// 從搜尋結果加入題目到暫存（不直接儲存）
-const handleAddSearchResultsToExam = async (questionIds, points) => {
-  if (!questionIds || questionIds.length === 0) return
-
-  try {
-    // 獲取搜尋結果中對應的題目詳細資料
-    const questionsToAdd = []
-
-    for (const qid of questionIds) {
-      try {
-        // 從 API 獲取完整的題目資料（包括 options）
-        const response = await questionService.getQuestion(qid)
-        const q = response.data
-
-        questionsToAdd.push({
-          content: q.content || q.question_content,
-          subject: q.subject_name || q.subject,
-          category: q.category,
-          question_type: q.question_type || '選擇題',
-          difficulty: q.difficulty || 'medium',
-          explanation: q.explanation || '',
-          options: q.options || [],
-          tag_ids: (q.tags || []).map(t => t.id),
-          points: points || 1,
-          order: examQuestions.value.length + pendingQuestions.value.length + questionsToAdd.length + 1
-        })
-      } catch (error) {
-        console.error(`獲取題目 ${qid} 失敗:`, error)
-        // 繼續處理其他題目
-      }
-    }
-
-    if (questionsToAdd.length > 0) {
-      // 加入到 pendingQuestions
-      pendingQuestions.value.push(...questionsToAdd)
-      alert(`已加入 ${questionsToAdd.length} 題到暫存，請記得儲存考卷`)
-    } else {
-      alert('無法找到選擇的題目')
-    }
-  } catch (error) {
-    console.error('加入題目失敗:', error)
-    alert('加入題目失敗：' + (error.message || '未知錯誤'))
-  }
-}
-
-// 載入標籤
-const handleLoadTags = async () => {
-  try {
-    const { data } = await tagService.getTags({ limit: 200 })
-    tags.value = Array.isArray(data) ? data : (data?.results || [])
-  } catch (error) {
-    console.error('載入標籤失敗:', error)
-    tags.value = []
-  }
-}
-// 搜尋題目
-const handleSearchQuestions = async (filters, page = 1, pageSize = 20) => {
-  searchLoading.value = true
-  try {
-    const { data } = await questionService.getQuestions({
-      subject: filters.subject || null,
-      difficulty: filters.difficulty || null,
-      keyword: filters.search || null,
-      page,
-      page_size: pageSize
-    })
-
-    let results = Array.isArray(data) ? data : (data?.results || [])
-
-    if (filters.source) {
-      results = results.filter(q => (q.source || '') === filters.source)
-    }
-
-    if (filters.tags && filters.tags.length > 0) {
-      const selectedTagIds = filters.tags.map(t => t.id)
-      const tagMode = filters.tag_mode === 'and' ? 'and' : 'or'
-      results = results.filter((q) => {
-        const tagIds = Array.isArray(q.tags) ? q.tags.map(tag => tag.id) : []
-        if (tagMode === 'and') {
-          return selectedTagIds.every(id => tagIds.includes(id))
-        }
-        return selectedTagIds.some(id => tagIds.includes(id))
-      })
-    }
-
-    // Transform search results to match exam question format
-    searchQuestions.value = results.map(q => ({
-      id: `search-${q.id}`,
-      question: q.id,
-      question_content: q.content || q.question_content,
-      question_subject: q.subject_name || q.subject,
-      question_category: q.category,
-      difficulty: q.difficulty,
-      tags: q.tags,
-      points: 1,
-      order: 0,
-      isSearchResult: true,
-      originalQuestion: q
-    }))
-    searchTotalCount.value = (filters.tags && filters.tags.length > 0)
-      ? results.length
-      : (data?.count || results.length)
-  } catch (error) {
-    console.error('搜尋題目失敗:', error)
-    searchQuestions.value = []
-    searchTotalCount.value = 0
-  } finally {
-    searchLoading.value = false
-  }
-}
-
-// Bulk tag/subject handlers removed; feature moved to AdminQuestionManagement
-
-// 從考卷移除題目
-const handleRemoveQuestion = async (examQuestionId) => {
-  if (!confirm('確定要移除這個題目嗎？')) return
-
-  try {
-    // 如果是暫存題目，直接從陣列中移除
-    if (typeof examQuestionId === 'string' && examQuestionId.startsWith('pending-')) {
-      const index = parseInt(examQuestionId.replace('pending-', ''))
-      pendingQuestions.value.splice(index, 1)
-
-      // 如果移除的是當前選中的題目，清空選擇
-      if (selectedExamQuestion.value?.id === examQuestionId) {
-        selectedQuestionId.value = null
-        selectedQuestion.value = null
-        selectedExamQuestion.value = null
-      }
-
-      alert('暫存題目已移除')
-      return
-    }
-
-    // 如果是暫存的現有題目連結，從陣列中移除
-    if (typeof examQuestionId === 'string' && examQuestionId.startsWith('link-')) {
-      const index = parseInt(examQuestionId.replace('link-', ''))
-      pendingExamLinks.value.splice(index, 1)
-
-      // 如果移除的是當前選中的題目，清空選擇
-      if (selectedExamQuestion.value?.id === examQuestionId) {
-        selectedQuestionId.value = null
-        selectedQuestion.value = null
-        selectedExamQuestion.value = null
-      }
-
-      alert('題目已從暫存列表移除')
-      return
-    }
-
-    // 已儲存的題目，呼叫 API 移除
-    if (pendingQuestionEdits.value[examQuestionId]) {
-      const nextEdits = { ...pendingQuestionEdits.value }
-      delete nextEdits[examQuestionId]
-      pendingQuestionEdits.value = nextEdits
-    }
-
-    await examStore.removeQuestionFromExam(examId.value, examQuestionId)
-    alert('題目移除成功')
-
-    // 如果移除的是當前選中的題目，清空選擇
-    if (selectedExamQuestion.value?.id === examQuestionId) {
-      selectedQuestionId.value = null
-      selectedQuestion.value = null
-      selectedExamQuestion.value = null
-    }
-
-    // 重新載入考卷資料
-    await loadExam()
-  } catch (error) {
-    console.error('移除題目失敗:', error)
-    alert('移除題目失敗：' + (error.response?.data?.message || error.message))
-  }
-}
-
-// 批次移除題目
-const handleBulkRemove = async () => {
-  if (selectedQuestionIds.value.length === 0) return
-  if (!confirm(`確定要移除選取的 ${selectedQuestionIds.value.length} 個題目嗎？`)) return
-
-  let successCount = 0
-  let failCount = 0
-
-  for (const id of selectedQuestionIds.value) {
-    try {
-      if (typeof id === 'string' && id.startsWith('pending-')) {
-        const index = parseInt(id.replace('pending-', ''))
-        pendingQuestions.value.splice(index, 1)
-        successCount++
-      } else if (typeof id === 'string' && id.startsWith('link-')) {
-        const index = parseInt(id.replace('link-', ''))
-        pendingExamLinks.value.splice(index, 1)
-        successCount++
-      } else {
-        if (pendingQuestionEdits.value[id]) {
-          const nextEdits = { ...pendingQuestionEdits.value }
-          delete nextEdits[id]
-          pendingQuestionEdits.value = nextEdits
-        }
-        await examStore.removeQuestionFromExam(examId.value, id)
-        successCount++
-      }
-    } catch (err) {
-      console.error(`移除題目 ${id} 失敗:`, err)
-      failCount++
-    }
-  }
-
-  // 清空選擇
-  selectedQuestionIds.value = []
-  selectedQuestionId.value = null
-  selectedQuestion.value = null
-  selectedExamQuestion.value = null
-
-  if (failCount === 0) {
-    alert(`成功移除 ${successCount} 題`)
-  } else {
-    alert(`移除完成：成功 ${successCount} 題，失敗 ${failCount} 題`)
-  }
-
-  await loadExam()
-}
-
-const startAutoDistribute = async () => {
-  calculateAutoDistribute()
-}
-
-const calculateAutoDistribute = () => {
-  const questions = [...allQuestions.value].sort((a, b) => {
-    const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER
-    const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER
-    if (orderA === orderB) {
-      return String(a.id).localeCompare(String(b.id))
-    }
-    return orderA - orderB
-  })
-
-  if (!questions.length) {
-    autoDistributeMessage.value = '目前尚無題目可配分'
-    autoDistributeQuotaList.value = []
-    return
-  }
-
-  const total = Number(autoPointsTotal.value)
-  if (!Number.isFinite(total) || total <= 0) {
-    autoDistributeMessage.value = '請輸入大於 0 的滿分'
-    autoDistributeQuotaList.value = []
-    return
-  }
-
-  const totalCents = Math.round(total * 100)
-  const count = questions.length
-  const base = Math.floor(totalCents / count)
-  let remainder = totalCents - base * count
-
-  autoDistributeQuotaList.value = questions.map((question) => {
-    let cents = base
-    if (remainder > 0) {
-      cents += 1
-      remainder -= 1
-    }
-    const points = cents / 100
-
-    return {
-      id: question.id,
-      content: question.question_content || question.pendingData?.content || '（暫存題目）',
-      points: points
-    }
-  })
-
-  autoDistributeMessage.value = `將自動均勻分配 ${total} 分至 ${count} 題`
-}
-
-const applyAutoDistribute = async () => {
-  if (autoDistributeQuotaList.value.length === 0) {
-    alert('請先計算配分試算')
-    return
-  }
-
-  autoDistributeLoading.value = true
-
-  try {
-    const questions = [...allQuestions.value].sort((a, b) => {
-      const orderA = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER
-      const orderB = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER
-      if (orderA === orderB) {
-        return String(a.id).localeCompare(String(b.id))
-      }
-      return orderA - orderB
-    })
-
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i]
-      const quotaItem = autoDistributeQuotaList.value[i]
-      const points = quotaItem.points
-
-      if (question.isPending) {
-        const pendingIndex = parseInt(String(question.id).replace('pending-', ''), 10)
-        if (!Number.isNaN(pendingIndex) && pendingQuestions.value[pendingIndex]) {
-          pendingQuestions.value[pendingIndex].points = points
-        }
-      } else if (question.id) {
-        queueExamQuestionEdit(question.id, {
-          examSettings: { points }
-        })
-
-        const eqIndex = examQuestions.value.findIndex(eq => eq.id === question.id)
-        if (eqIndex !== -1) {
-          examQuestions.value[eqIndex] = {
-            ...examQuestions.value[eqIndex],
-            points
-          }
-        }
-
-        if (selectedExamQuestion.value?.id === question.id) {
-          selectedExamQuestion.value = {
-            ...selectedExamQuestion.value,
-            points
-          }
-        }
-      }
-    }
-
-    isAutoDistributeModalVisible.value = false
-    autoDistributeQuotaList.value = []
-    autoDistributeMessage.value = ''
-    alert(`已配分完成！請記得儲存考卷以套用變更。`)
-  } catch (error) {
-    console.error('應用配分失敗:', error)
-    alert('應用配分失敗，請稍後再試。')
-  } finally {
-    autoDistributeLoading.value = false
-  }
-}
-
-const autoDistributePoints = async () => {
-  // 打開配分試算 Modal
-  isAutoDistributeModalVisible.value = true
-  calculateAutoDistribute()
-}
-
-// 處理 PDF 匯入
-const handlePdfImport = ({ examData, questions, answers }) => {
-  console.log('處理 PDF 匯入:', { examData, questions, answers })
-
-  // 1. 自動填寫考卷欄位
-  if (examData) {
-    exam.value = {
-      name: examData.name || exam.value?.name || '',
-      description: examData.description || exam.value?.description || '',
-      time_limit: examData.time_limit || exam.value?.time_limit || null
-    }
-  }
-
-  // 2. 將解析的題目加入暫存列表
-  const processedQuestions = questions.map((q, index) => {
-    // 取得此題目的答案
-    const correctAnswer = answers?.answers?.[index] || q.correct_answer
-    const hasModifiedAnswer = correctAnswer === '*'
-
-    // 處理選項：將字串陣列轉換為物件陣列，並根據答案標記正確選項
-    const options = (q.options || []).map((optionText, optIndex) => {
-      const optionLabel = String.fromCharCode(65 + optIndex) // A, B, C, D...
-      return {
-        content: typeof optionText === 'string' ? optionText : (optionText.content || ''),
-        is_correct: !hasModifiedAnswer && correctAnswer === optionLabel // 如果答案是 *，則不標記任何選項為正確
-      }
-    })
-
-    return {
-      content: q.content || q.question || `題目 ${index + 1}`,
-      subject: examData?.subject || '未分類',
-      category: examData?.category || '選擇題',
-      explanation: q.explanation || '',
-      options: options,
-      points: q.points || 0,
-      correct_answer: correctAnswer,
-      has_modified_answer: hasModifiedAnswer
-    }
-  })
-
-  // 將新題目加入暫存列表
-  pendingQuestions.value = [...pendingQuestions.value, ...processedQuestions]
-
-  console.log(`已加入 ${processedQuestions.length} 個暫存題目`)
-  alert(`已匯入 ${processedQuestions.length} 題到暫存列表\n請儲存考卷以建立這些題目`)
-}
-
-const consumePendingPdfImport = () => {
-  const payload = pdfImportStore.consumePayload()
-  if (payload) {
-    handlePdfImport(payload)
-  }
-}
-
-// Preload questions from query params (when coming from "建立新考卷" with selected questions)
-const preloadQuestionsFromQuery = async () => {
-  console.log('preloadQuestionsFromQuery called')
-  console.log('route.query:', route.query)
-  console.log('examId.value:', examId.value)
-
-  const preloadParam = route.query.preload_questions
-  if (!preloadParam || examId.value) {
-    // Only preload when creating new exam, not editing existing one
-    console.log('Skipping preload - no param or editing existing exam')
-    return
-  }
-
-  const questionIds = preloadParam.split(',').map(id => parseInt(id)).filter(id => !isNaN(id))
-  console.log('Parsed question IDs:', questionIds)
-  if (questionIds.length === 0) return
-
-  console.log('Preloading questions:', questionIds)
-
-  try {
-    // Fetch question details for each ID
-    const fetchPromises = questionIds.map(id => questionService.getQuestion(id).catch(err => {
-      console.error(`Failed to fetch question ${id}:`, err)
-      return null
-    }))
-    const responses = await Promise.all(fetchPromises)
-    console.log('Fetched responses:', responses)
-
-    let addedCount = 0
-    for (const res of responses) {
-      if (!res || !res.data) {
-        console.log('Skipping null response')
-        continue
-      }
-
-      const q = res.data
-      console.log('Adding question to pendingExamLinks:', q)
-      // Add to pendingExamLinks (existing questions to be linked, not create new)
-      pendingExamLinks.value.push({
-        questionId: q.id,
-        questionContent: q.content,
-        questionSubject: q.subject || '未分類',
-        questionCategory: q.category || '',
-        points: 1
-      })
-      addedCount++
-    }
-
-    console.log('pendingExamLinks after preload:', pendingExamLinks.value)
-
-    if (addedCount > 0) {
-      console.log(`Preloaded ${addedCount} questions to pendingExamLinks`)
-    }
-  } catch (error) {
-    console.error('Failed to preload questions:', error)
-  }
-}
-
-onMounted(async () => {
-  await loadExam()
-  consumePendingPdfImport()
-  await preloadQuestionsFromQuery()
+// Tab - 題庫 / 搜尋
+const activeTab = ref('questions')
+const tabBarSentinel = ref(null)
+const { isSticky: isTabBarSticky } = useSticky(tabBarSentinel)
+
+// Filters
+const filterContent = ref('');
+const filterType = ref('All Types');
+const filterDifficulty = ref('All Difficulty');
+
+// Search tab state
+const searchFilters = ref({
+    category: '',
+    subject: '',
+    difficulty: '',
+    question_type: '',
+    search: '',
+    tags: [],
+    tag_mode: 'or'
 })
+const {
+    questions: searchResults,
+    loading: searchLoading,
+    totalCount: searchTotalCount,
+    page: searchCurrentPage,
+    pageSize: searchPageSize,
+    paginationState: searchPaginationState
+} = storeToRefs(questionStore)
+const searchSelectedIds = ref([])
+
+const difficultyLabel = (d) => {
+    const map = { easy: '簡單', normal: '普通', hard: '困難', insane: '地獄' }
+    return map[d] || d || '未知'
+}
+
+const handleSearch = async () => {
+    const f = searchFilters.value
+    questionStore.setFilters({
+        subject: f.subject || null,
+        difficulty: f.difficulty || null,
+        type: f.question_type || null,
+        keyword: f.search || null,
+        category: f.category || null,
+        tag_ids: f.tags?.length ? f.tags.map(t => t.id ?? t) : null,
+        tag_mode: f.tag_mode || 'or',
+    })
+    await questionStore.search()
+}
+const handleSearchPageChange = (page) => questionStore.goToPage(page)
+const handleSearchPageSizeChange = (size) => questionStore.setPageSize(size)
+const handleResetSearch = () => questionStore.resetFilters()
+const handleSearchSelectedIdsChange = (ids) => { searchSelectedIds.value = ids }
+const handleSearchItemClick = (item) => { handlePreviewQuestion(item) }
+
+// --- Question Preview Modal ---
+const showPreviewModal = ref(false)
+const previewQuestion = ref(null)
+
+const handlePreviewQuestion = (item) => {
+    previewQuestion.value = item
+    showPreviewModal.value = true
+}
+
+const handleAddPreviewedQuestion = (question) => {
+    if (!isQuestionInExam(question)) {
+        examStore.addQuestion(question)
+    }
+}
+const isQuestionInExam = (item) => {
+    return (examQuestions.value || []).some(q => q.id == item.id)
+}
+const handleToggleAddQuestion = (item) => {
+    if (isQuestionInExam(item)) {
+        examStore.removeQuestion(item.id)
+    } else {
+        examStore.addQuestion(item)
+    }
+}
+const handleBulkAddToExam = (selectedIds, clearSelection) => {
+    selectedIds.forEach(id => {
+        const question = searchResults.value.find(q => q.id === id)
+        if (question && !isQuestionInExam(question)) {
+            examStore.addQuestion(question)
+        }
+    })
+    clearSelection()
+}
+const handleBulkRemoveFromExam = (selectedIds, clearSelection) => {
+    selectedIds.forEach(id => {
+        const question = examQuestions.value.find(q => q.id === id)
+        if (question) {
+            examStore.removeQuestion(question.id)
+        }
+    })
+    clearSelection()
+}
+
+// ---- Batch Score ----
+const showBatchScore = ref(false)
+const batchScoreQuestions = ref([])
+
+const openBatchScore = (selectedIds) => {
+    batchScoreQuestions.value = examQuestions.value.filter(q => selectedIds.includes(q.id))
+    showBatchScore.value = true
+}
+
+const handleBatchScoreApplied = ({ points, questionIds }) => {
+    questionIds.forEach(id => examStore.updateQuestionPoints(id, points))
+    showBatchScore.value = false
+}
+
+function filterQuestions() {
+    let questions = sortedQuestions.value;
+    if (filterContent.value) {
+        questions = questions.filter(question => question.content.toLowerCase().includes(filterContent.value.toLowerCase()));
+    }
+    if (filterType.value != "All Types") {
+        questions = questions.filter(question => question.type == filterType.value);
+    }
+    if (filterDifficulty.value != "All Difficulty") {
+        questions = questions.filter(question => question.difficulty == filterDifficulty.value);
+    }
+    return questions;
+}
+
+// Sorting
+const sortKey = ref('');
+const sortOrder = ref('');
+
+const handleSortChange = ({ key, order }) => {
+    sortKey.value = key
+    sortOrder.value = order
+}
+
+const sortedQuestions = computed(() => {
+    if (!sortKey.value) return examQuestions.value
+    return [...examQuestions.value].sort((a, b) => {
+        const aVal = a[sortKey.value]
+        const bVal = b[sortKey.value]
+        if (aVal == null || bVal == null) return 0
+        const cmp = typeof aVal === 'string' ? aVal.localeCompare(bVal) : aVal - bVal
+        return sortOrder.value === 'asc' ? cmp : -cmp
+    })
+});
+
+// Reorder
+const handleReorder = (change) => {
+    examStore.reorderQuestions(change.fromIndex, change.toIndex)
+}
+
+// Table Columns
+const tableColumns = ref([
+    { key: 'order', label: '#', width: '2%', align: 'center', sortable: true },
+    { key: 'content', label: 'Question Content', width: '70%', sortable: true },
+    { key: 'type', label: 'Type', width: '5%', align: 'center', sortable: true },
+    { key: 'difficulty', label: 'Difficulty', width: '5%', align: 'center', sortable: true },
+    { key: 'points', label: 'Score', width: '5%', align: 'center', sortable: true },
+    { key: 'actions', label: 'Actions', width: '5%', align: 'center' }
+]);
+
+// Stats
+const statTotalQuestions = computed(() => (examQuestions.value || []).length);
+const statTotalScore = computed(() => (examQuestions.value || []).reduce((total, q) => total + q.points, 0));
+
+// Methods
+onMounted(async () => {
+    const examId = route.params.id ? Number(route.params.id) : null;
+    if (examId) {
+        try {
+            await examStore.loadExam(examId);
+        } catch (error) {
+            console.log("Error fetching exam:", error);
+        }
+    } else {
+        examStore.initNewExam();
+    }
+});
+
+const handUpdateScore = (id, event) => {
+    const points = Number(event.target.value)
+    if (points >= 0) {
+        examStore.updateQuestionPoints(id, points)
+    } else {
+        const q = (examQuestions.value || []).find(q => q.id === id)
+        if (q) event.target.value = q.points
+    }
+}
+
+const handleDiscard = () => {
+    examStore.discardChanges()
+}
+
+const isSaving = ref(false)
+
+const handleSave = async () => {
+    if (!hasChanges.value || isSaving.value) return
+    isSaving.value = true
+    try {
+        const isNew = !route.params.id
+        const eid = await examStore.saveExam()
+        if (isNew && eid) {
+            router.replace(`/admin/exams/${eid}/edit`)
+        }
+    } catch (err) {
+        console.error('Save failed:', err)
+        alert('儲存失敗：' + (err.message || '未知錯誤'))
+    } finally {
+        isSaving.value = false
+    }
+}
+
+// --- Leave Page Guard ---
+const showLeaveModal = ref(false)
+let resolveLeaveGuard = null
+
+onBeforeRouteLeave((to, from, next) => {
+    if (!hasChanges.value) {
+        next()
+        return
+    }
+    showLeaveModal.value = true
+    resolveLeaveGuard = next
+})
+
+const saveAndLeave = async () => {
+    await handleSave()
+    showLeaveModal.value = false
+    resolveLeaveGuard?.()
+}
+
+const discardAndLeave = () => {
+    showLeaveModal.value = false
+    resolveLeaveGuard?.()
+}
+
+const cancelLeave = () => {
+    showLeaveModal.value = false
+    resolveLeaveGuard?.(false)
+}
+
+// Browser tab close / refresh
+const beforeUnloadHandler = (e) => {
+    if (hasChanges.value) {
+        e.preventDefault()
+        e.returnValue = ''
+    }
+}
+onMounted(() => window.addEventListener('beforeunload', beforeUnloadHandler))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnloadHandler))
+
+const getRowClass = (item) => {
+    const c = questionChanges.value
+    if (c.addedQuestions.some(q => q.id === item.id)) return 'row-added'
+    if (c.removedQuestions.some(q => q.id === item.id)) return 'row-removed'
+    if (c.orderChanged.some(q => q.id === item.id)) return 'row-modified'
+    if (c.scoreChanged.some(q => q.id === item.id)) return 'row-modified'
+    return ''
+}
 </script>
 
 <style scoped>
-.exam-edit-view {
-  padding: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-  background: #f8fafc;
-  min-height: 100vh;
+/* Reset & Base */
+* {
+    box-sizing: border-box;
 }
 
-.question-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: white;
-  border-bottom: 1px solid var(--border, #CBD5E1);
-  flex-wrap: wrap;
-}
-
-.toolbar-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.toolbar-btn svg {
-  flex-shrink: 0;
-}
-
-.toolbar-btn-primary {
-  background: var(--primary, #476996);
-  color: white;
-}
-
-.toolbar-btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover, #35527a);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
-}
-
-.toolbar-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.toolbar-btn-danger {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.toolbar-btn-danger:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
-}
-
-.toolbar-btn-danger:active {
-  transform: translateY(0);
-}
-
-.content-container {
-  height: auto;
-}
-
-.left-panel,
-.right-panel {
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.right-panel-inner {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-@media (max-width: 1200px) {
-  .content-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .left-panel,
-  .right-panel {
-    height: 600px;
+.exam-design-page {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: 'Inter', sans-serif;
     display: flex;
     flex-direction: column;
-  }
 }
 
-.question-list-wrapper {
-  flex: 1;
-  min-height: 0;
-  /* for proper scrolling in flex container */
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  /* give space so shadows and rounded corners don't get clipped */
+/* Header */
+.page-header {
+    height: 50px;
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    position: sticky;
+    top: 50px;
+    z-index: 100;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
-.question-list-wrapper>* {
-  height: 100%;
-  width: 100%;
+.page-header.has-changes {
+    background-color: #FEF3C7;
+    border-bottom: 2px solid #F59E0B;
 }
 
-.right-actions {
-  padding: 12px 0 0 0;
-  display: flex;
-  gap: 8px;
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
 }
 
-/* Saving Progress Modal */
-.saving-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 1060;
-  animation: savingFadeIn 0.2s ease-out;
+.page-header.has-changes .page-title {
+    font-size: 16px;
+    color: #92400E;
 }
 
-@keyframes savingFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+.unsaved-icon {
+    font-size: 16px;
+    flex-shrink: 0;
 }
 
-.saving-modal {
-  width: 90%;
-  max-width: 400px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: savingSlideUp 0.3s ease-out;
-  overflow: hidden;
+.unsaved-sep {
+    font-size: 16px;
+    color: #B45309;
 }
 
-@keyframes savingSlideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.unsaved-detail {
+    font-size: 13px;
+    color: #B45309;
+    white-space: nowrap;
 }
 
-.saving-header {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 24px 24px 20px;
-  border-bottom: 1px solid var(--border, #E2E8F0);
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
-.saving-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: var(--primary, #476996);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
+.unsaved-btn-discard {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid #D97706;
+    background: transparent;
+    color: #92400E;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
-.saving-icon-spin {
-  animation: savingSpin 1s linear infinite;
+.unsaved-btn-discard:hover {
+    background: #FDE68A;
 }
 
-@keyframes savingSpin {
-  to {
-    transform: rotate(360deg);
-  }
+.unsaved-btn-save {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: none;
+    background: #D97706;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
-.saving-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary, #1E293B);
-  margin: 0 0 4px 0;
+.unsaved-btn-save:hover {
+    background: #B45309;
 }
 
-.saving-subtitle {
-  font-size: 14px;
-  color: var(--text-secondary, #64748B);
-  margin: 0;
+.breadcrumb {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 2px;
 }
 
-.saving-body {
-  padding: 24px;
-  text-align: center;
+.page-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
 }
 
-.saving-steps {
-  margin-bottom: 16px;
-  font-size: 14px;
+/* Content Area */
+.content-area {
+    flex: 1;
+    padding: 24px;
+    display: flex;
+    gap: 24px;
 }
 
-.saving-current {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--primary, #476996);
+/* Left Panel */
+.left-panel {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
-.saving-divider {
-  margin: 0 4px;
-  color: var(--text-secondary, #64748B);
+.card {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    /* For rounded corners with header */
+    display: flex;
+    flex-direction: column;
 }
 
-.saving-total {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--text-secondary, #64748B);
+/* Info Card */
+.info-header {
+    height: 50px;
+    background-color: white;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.saving-progress-container {
-  height: 8px;
-  background: var(--border, #E2E8F0);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 12px;
+.info-icon {
+    display: none;
 }
 
-.saving-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary, #476996), var(--primary-hover, #35527a));
-  border-radius: 4px;
-  transition: width 0.3s ease;
+.info-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
 }
 
-.saving-percent {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #1E293B);
+.form-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-/* Auto Distribute Modal */
-.auto-distribute-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  z-index: 1050;
-  animation: adFadeIn 0.2s ease-out;
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-@keyframes adFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
 }
 
-.auto-distribute-modal {
-  width: 90%;
-  max-width: 480px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: adSlideUp 0.3s ease-out;
+.form-group input,
+.form-group textarea {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #334155;
 }
 
-@keyframes adSlideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
 }
 
-.ad-modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 24px 24px 20px;
-  border-bottom: 1px solid var(--border, #E2E8F0);
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
 }
 
-.ad-header-content {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
+.btn-primary {
+    background-color: #476996;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
 }
 
-.ad-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  flex-shrink: 0;
+.btn-secondary {
+    background-color: white;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
 }
 
-.ad-modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary, #1E293B);
-  margin: 0 0 4px 0;
+/* Stats Card */
+.stats-header {
+    height: 50px;
+    background-color: white;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.ad-modal-subtitle {
-  font-size: 14px;
-  color: var(--text-secondary, #64748B);
-  margin: 0;
+.stats-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
 }
 
-.ad-close-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: #f3f4f6;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
+.stats-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.ad-close-btn:hover {
-  background: #e5e7eb;
-  color: #111827;
+.counters {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-.ad-modal-body {
-  padding: 24px;
+.counter-item {
+    flex: 1;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.ad-input-section {
-  margin-bottom: 24px;
+.count {
+    font-size: 20px;
+    font-weight: 700;
+    color: #476996;
 }
 
-.ad-input-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #1E293B);
-  margin-bottom: 12px;
+.label {
+    font-size: 12px;
+    color: #64748b;
 }
 
-.ad-input-label svg {
-  color: var(--primary, #476996);
+/* Right Panel */
+.right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.ad-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Sentinel */
+.sentinel {
+    height: 1px;
 }
 
-.ad-input {
-  flex: 1;
-  padding: 14px 16px;
-  border: 2px solid var(--border, #E2E8F0);
-  border-radius: 10px;
-  font-size: 18px;
-  font-weight: 600;
-  text-align: center;
-  transition: all 0.2s;
+/* Tab Bar */
+.tab-bar {
+    position: sticky;
+    top: 100px;
+    z-index: 100;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    transition: box-shadow 0.2s ease, border-radius 0.2s ease;
 }
 
-.ad-input:focus {
-  outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+.tab-bar.is-sticky {
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.ad-input-unit {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-secondary, #64748B);
+
+.tab-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
-.ad-result-section {
-  margin-bottom: 16px;
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.ad-result-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #1E293B);
-  margin-bottom: 16px;
+.tab-item:hover {
+    background: #f1f5f9;
+    color: #1e293b;
 }
 
-.ad-result-header svg {
-  color: var(--primary, #476996);
+.tab-item.active {
+    background: #476996;
+    color: white;
+    font-weight: 600;
 }
 
-.ad-result-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+.tab-item.active svg {
+    color: white;
 }
 
-.ad-result-item {
-  text-align: center;
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-.ad-result-label {
-  font-size: 13px;
-  color: var(--text-secondary, #64748B);
-  margin-bottom: 4px;
+.tab-item.active .tab-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
 }
 
-.ad-result-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary, #1E293B);
+/* Toolbar */
+.toolbar {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.ad-result-unit {
-  font-size: 14px;
-  font-weight: 500;
+.filter-row {
+    display: flex;
+    gap: 12px;
 }
 
-.ad-message {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  background: var(--primary-soft, #EEF2FF);
-  border-radius: 10px;
-  font-size: 14px;
-  color: var(--primary, #476996);
+.search-box {
+    flex: 2;
+    height: 40px;
+    padding: 0 12px;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
 }
 
-.ad-message svg {
-  flex-shrink: 0;
+.filter-select {
+    flex: 1;
+    height: 40px;
+    padding: 0 12px;
+    background-color: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
 }
 
-.ad-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid var(--border, #E2E8F0);
-  background: #f8fafc;
-  border-radius: 0 0 16px 16px;
+/* Search Results Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
 }
 
-.ad-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+.badge-subject {
+    background: #476996;
+    color: white;
 }
 
-.ad-btn-secondary {
-  background: white;
-  color: var(--text-secondary, #64748B);
-  border: 2px solid var(--border, #E2E8F0);
+.badge-tag {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
 }
 
-.ad-btn-secondary:hover {
-  background: #f9fafb;
-  color: var(--text-primary, #1E293B);
-  border-color: #94a3b8;
+.badge-more {
+    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
 }
 
-.ad-btn-primary {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+.badge-easy {
+    background: #dcfce7;
+    color: #166534;
 }
 
-.ad-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+.badge-normal {
+    background: #dbeafe;
+    color: #1e40af;
 }
 
-.ad-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
+.badge-hard {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
-.ad-btn-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: adSpin 0.8s linear infinite;
+.badge-insane {
+    background: #fae8ff;
+    color: #86198f;
 }
 
-@keyframes adSpin {
-  to {
-    transform: rotate(360deg);
-  }
+/* Action Buttons in Search Results */
+.action-btn-add {
+    background: #476996;
+    color: white;
+    border-color: #476996;
+}
+
+.action-btn-add:hover {
+    background: #35527a !important;
+    color: white !important;
+    border-color: #35527a !important;
+}
+
+.action-btn-add.added {
+    background: #476996;
+    color: white;
+    border-color: #476996;
+    opacity: 0.6;
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+}
+
+/* Question List */
+.question-list {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.list-header {
+    height: 44px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.list-row {
+    height: 64px;
+    background-color: white;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    color: #334155;
+}
+
+/* Columns */
+.col-checkbox {
+    width: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.col-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}
+
+.q-text {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.q-meta {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.col-type {
+    width: 80px;
+    text-align: center;
+}
+
+.col-diff {
+    width: 80px;
+    text-align: center;
+}
+
+.score-input {
+    width: 56px;
+    text-align: center;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 4px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1E293B;
+    background: #F8FAFC;
+    outline: none;
+    transition: all 0.2s;
+    -moz-appearance: textfield;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.score-input:hover {
+    border-color: #CBD5E1;
+    background: white;
+}
+
+.score-input:focus {
+    border-color: #476996;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(71, 105, 150, 0.15);
+}
+
+.col-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Change Indicators */
+:deep(.table-row.row-added) {
+    background: #F0FDF4;
+    border-left: 3px solid #22C55E;
+}
+
+:deep(.table-row.row-added) .td-cell {
+    color: #166534;
+}
+
+:deep(.table-row.row-added) .grip-cell {
+    color: #16A34A;
+}
+
+:deep(.table-row.row-added:hover) {
+    background: #DCFCE7;
+}
+
+:deep(.table-row.row-modified) {
+    background: #FEF3C7;
+    border-left: 3px solid #F59E0B;
+}
+
+:deep(.table-row.row-modified) .td-cell {
+    color: #92400E;
+}
+
+:deep(.table-row.row-modified) .grip-cell {
+    color: #B45309;
+}
+
+:deep(.table-row.row-modified:hover) {
+    background: #FDE68A;
+}
+
+:deep(.table-row.row-removed) {
+    background: #FEF2F2;
+    border-left: 3px solid #EF4444;
+}
+
+:deep(.table-row.row-removed) .td-cell {
+    color: #991B1B;
+}
+
+:deep(.table-row.row-removed) .grip-cell {
+    color: #EF4444;
+}
+
+:deep(.table-row.row-removed:hover) {
+    background: #FEE2E2;
+}
+
+/* Leave Page Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: #1E293BB3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: white;
+    border-radius: 16px;
+    width: 440px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 28px 28px 0;
+    text-align: center;
+}
+
+.modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background: #FEF3C7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1E293B;
+}
+
+.modal-desc {
+    margin: 0;
+    font-size: 14px;
+    color: #64748B;
+}
+
+.modal-body {
+    padding: 20px 28px;
+}
+
+.modal-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.summary-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.summary-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #475569;
+}
+
+.summary-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.summary-dot.added {
+    background: #22C55E;
+}
+
+.summary-dot.removed {
+    background: #EF4444;
+}
+
+.summary-dot.modified {
+    background: #F59E0B;
+}
+
+.modal-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 28px 28px;
+}
+
+.modal-btn-save {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #476996;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-btn-save:hover {
+    background: #35527a;
+}
+
+.modal-btn-discard {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #E2E8F0;
+    background: white;
+    color: #64748B;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-btn-discard:hover {
+    background: #F8FAFC;
+}
+
+.modal-btn-cancel {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: #94A3B8;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-btn-cancel:hover {
+    background: #F1F5F9;
+}
+
+.btn-warning {
+    background: #D97706;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-warning:hover {
+    background: #B45309;
+}
+
+.btn-danger {
+    background: #DC2626;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background: #B91C1C;
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 13px;
 }
 </style>

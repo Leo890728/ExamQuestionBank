@@ -401,6 +401,7 @@ export const useExamStore = defineStore('exam', () => {
     addQuestionToExam: (examId, payload) => examService.addQuestionToExam(examId, payload),
     updateExamQuestion: (examId, payload) => examService.updateExamQuestion(examId, payload),
     removeQuestionFromExam: (examId, examQuestionId) => examService.removeQuestionFromExam(examId, examQuestionId),
+    batchUpdateExamQuestions: (examId, updates) => examService.batchUpdateExamQuestions(examId, updates),
     getPracticeExams: (params) => examService.getPracticeExams(params),
     getHistoricalExams: (params) => examService.getHistoricalExams(params),
     saveExamResult: (payload) => examService.saveExamResult(payload),

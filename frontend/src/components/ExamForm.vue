@@ -165,27 +165,30 @@ watch(() => props.exam, (newExam) => {
 <style scoped>
 .exam-form-card {
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border, #CBD5E1);
-  margin-bottom: 24px;
-  overflow: hidden;
+  box-shadow: none;
+  border: none;
+  border-radius: 20px;
+  margin: 20px;
+  overflow: auto;
 }
 
 .form-header {
   background: linear-gradient(135deg, var(--primary, #476996) 0%, var(--primary-hover, #35527a) 100%);
-  padding: 32px;
+  padding: 24px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 16px;
+  border-bottom: none;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .header-icon {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,8 +198,8 @@ watch(() => props.exam, (newExam) => {
 
 .header-icon svg {
   color: white;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
 }
 
 .header-content {
@@ -204,30 +207,30 @@ watch(() => props.exam, (newExam) => {
 }
 
 .header-title {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 700;
   color: white;
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
   letter-spacing: -0.02em;
 }
 
 .header-subtitle {
-  font-size: 15px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.85);
   margin: 0;
   font-weight: 400;
 }
 
 .exam-form {
-  padding: 32px;
+  padding: 24px;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .form-group:last-of-type {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .form-label {
@@ -318,10 +321,10 @@ watch(() => props.exam, (newExam) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 28px;
+  padding: 12px 20px;
   border: none;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -332,7 +335,7 @@ watch(() => props.exam, (newExam) => {
   background: var(--primary, #476996);
   color: white;
   flex: 1;
-  min-width: 140px;
+  min-width: 120px;
   box-shadow: 0 2px 4px rgba(71, 105, 150, 0.2);
 }
 
@@ -355,7 +358,7 @@ watch(() => props.exam, (newExam) => {
 .btn-cancel {
   background: #f3f4f6;
   color: var(--text-secondary, #64748B);
-  min-width: 100px;
+  min-width: 80px;
 }
 
 .btn-cancel:hover {

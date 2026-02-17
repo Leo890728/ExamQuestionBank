@@ -246,6 +246,17 @@ const examService = {
     return { success: true }
   },
 
+  // Batch update exam questions (order + points) in a single transaction
+  async batchUpdateExamQuestions(examId, updates = []) {
+    // updates: [{ exam_question_id, order, points }, ...]
+    const { error } = await supabase.rpc('batch_update_exam_questions', {
+      p_exam_id: toNumber(examId),
+      p_updates: updates
+    })
+    if (error) throw new Error(error.message)
+    return { success: true }
+  },
+
   // Remove question from exam (table fallback: no RPC available)
   async removeQuestionFromExam(examId, examQuestionId) {
     let query = supabase.from('exam_question').delete().eq('id', toNumber(examQuestionId))

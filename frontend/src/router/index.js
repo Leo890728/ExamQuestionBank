@@ -144,7 +144,7 @@ const router = createRouter({
       name: 'AuthCallback',
       component: () => import('@/views/AuthCallbackView.vue'),
       alias: '/auth/v1/callback'
-    }
+    },
   ]
 })
 
