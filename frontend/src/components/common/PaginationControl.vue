@@ -149,7 +149,7 @@ const handlePageJump = () => {
     gap: 16px;
     padding: 20px;
     background: white;
-    border-radius: 12px;
+    border-radius: 12px 12px 0 0;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border, #CBD5E1);
     flex-wrap: wrap;

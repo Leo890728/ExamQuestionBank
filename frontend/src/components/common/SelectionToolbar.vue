@@ -59,15 +59,12 @@ defineEmits(['clear'])
 
 <style scoped>
 .selection-toolbar-wrapper {
-    position: fixed;
+    position: sticky;
     bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
     z-index: 1000;
-    width: calc(100% - 48px);
+    width: 100%;
     max-width: 900px;
-    pointer-events: none;
-    /* Allow clicking through the wrapper area */
+    margin: 24px auto 0;
 }
 
 .selection-toolbar {
@@ -241,24 +238,24 @@ defineEmits(['clear'])
 
 .slide-up-enter-from {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateY(20px);
 }
 
 .slide-up-leave-to {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateY(20px);
 }
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .selection-toolbar-wrapper {
-        bottom: 80px; /* Above mobile bottom nav */
-        width: calc(100% - 24px); /* Wider on mobile */
+        width: 100%;
     }
 
     .toolbar-content {
         padding: 12px 16px;
-        flex-direction: column; /* Stack info and actions */
+        flex-direction: column;
+        /* Stack info and actions */
         gap: 12px;
         align-items: stretch;
     }
@@ -274,15 +271,17 @@ defineEmits(['clear'])
 
     .toolbar-actions {
         width: 100%;
-        justify-content: space-between; /* Spread buttons */
+        justify-content: space-between;
+        /* Spread buttons */
     }
-    
+
     :deep(.toolbar-btn) {
-        flex: 1; /* Equal width buttons */
+        flex: 1;
+        /* Equal width buttons */
         justify-content: center;
         padding: 8px 12px;
     }
-    
+
     /* Hide specific text labels if buttons get too crowded? 
        For now, equal width is good. */
 }

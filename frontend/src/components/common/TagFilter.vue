@@ -1,24 +1,15 @@
 <template>
     <div class="tag-filter-container">
-        <div class="tag-filter-main">
-            <div class="input-icon-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" class="tags-icon">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                </svg>
-                <multiselect :model-value="modelValue" :options="options" :multiple="true" :close-on-select="false"
-                    :clear-on-select="false" :preserve-search="true" :placeholder="placeholder" track-by="id"
-                    label="name" class="tag-multiselect" @update:model-value="$emit('update:modelValue', $event)" />
-
-                <!-- Mode Toggle - Absolute positioned inside input -->
-                <transition name="fade-slide">
-                    <button v-if="modelValue.length > 1" type="button" class="mode-toggle-inside"
-                        @click.stop="toggleMode" :class="mode" :title="modeTitle">
-                        <span class="mode-text">{{ mode === 'or' ? 'OR' : 'AND' }}</span>
-                    </button>
-                </transition>
-            </div>
+        <div class="input-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="tags-icon">
+                <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path>
+                <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+            </svg>
+            <multiselect :model-value="modelValue" :options="options" :multiple="true" :close-on-select="false"
+                :clear-on-select="false" :preserve-search="true" :placeholder="placeholder" track-by="id"
+                label="name" class="tag-multiselect" @update:model-value="$emit('update:modelValue', $event)" />
         </div>
     </div>
 </template>
@@ -26,9 +17,8 @@
 <script setup>
 import Multiselect from 'vue-multiselect'
 import 'vue-multiselect/dist/vue-multiselect.min.css'
-import { computed } from 'vue'
 
-const props = defineProps({
+defineProps({
     modelValue: {
         type: Array,
         default: () => []
@@ -47,154 +37,216 @@ const props = defineProps({
     }
 })
 
-const emit = defineEmits(['update:modelValue', 'update:mode'])
-
-const toggleMode = () => {
-    emit('update:mode', props.mode === 'or' ? 'and' : 'or')
-}
-
-const modeTitle = computed(() => {
-    return props.mode === 'or' ? '目前與 (OR) - 點擊切換為交集' : '目前交集 (AND) - 點擊切換為聯集'
-})
+defineEmits(['update:modelValue', 'update:mode'])
 </script>
 
 <style scoped>
 .tag-filter-container {
-    flex: 1;
-    min-width: 320px;
-}
-
-.tag-filter-main {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    position: relative;
+    width: 100%;
 }
 
 .input-icon-wrapper {
     position: relative;
-    flex: 1;
+    width: 100%;
 }
 
 .tags-icon {
     position: absolute;
     left: 14px;
-    top: 16px;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 10;
-    color: var(--text-secondary, #64748B);
+    color: var(--text-secondary, #94A3B8);
     pointer-events: none;
 }
 
+/* ===== Multiselect Container ===== */
 .tag-multiselect {
     width: 100%;
 }
 
-.tag-multiselect :deep(.multiselect__placeholder) {
-    margin-bottom: 0px;
+.tag-multiselect :deep(.multiselect) {
+    min-height: 44px;
 }
 
-/* Customized Multiselect Styles */
 .tag-multiselect :deep(.multiselect__tags) {
     display: flex;
-    flex-direction: column;
-    border: 2px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 8px 50px 8px 44px;
-    background: #f9fafb;
-    min-height: 49px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 8px 40px 8px 40px;
+    background: var(--bg-page, #F1F5F9);
+    min-height: 44px;
     transition: all 0.2s ease;
 }
 
-.tag-multiselect :deep(.multiselect__tags):focus-within {
+.tag-multiselect :deep(.multiselect--active .multiselect__tags) {
     border-color: var(--primary, #476996);
-    background: white;
+    background: var(--surface, #FFFFFF);
     box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
+/* ===== Tags (Selected Chips) ===== */
 .tag-multiselect :deep(.multiselect__tag) {
+    position: relative;
     background: var(--primary, #476996);
     color: white;
     border-radius: 6px;
-    max-width: 150px;
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    display: inline-block;
-    vertical-align: top;
-    padding: 6px 26px 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 26px 5px 10px;
     margin: 2px 4px 2px 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.tag-multiselect :deep(.multiselect__tag-icon) {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 0 4px 4px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    line-height: 1;
 }
 
 .tag-multiselect :deep(.multiselect__tag-icon:after) {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
 }
 
 .tag-multiselect :deep(.multiselect__tag-icon:hover) {
     background: var(--primary-hover, #35527a);
 }
 
+.tag-multiselect :deep(.multiselect__tag-icon:hover:after) {
+    color: white;
+}
+
+/* ===== Input & Placeholder ===== */
+.tag-multiselect :deep(.multiselect__input) {
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    color: var(--text-primary, #1E293B);
+    padding: 0;
+    margin: 0;
+    min-height: auto;
+    line-height: 1.4;
+}
+
+.tag-multiselect :deep(.multiselect__input::placeholder) {
+    color: var(--text-secondary, #94A3B8);
+}
+
+.tag-multiselect :deep(.multiselect__placeholder) {
+    color: var(--text-secondary, #94A3B8);
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+}
+
+/* ===== Dropdown ===== */
+.tag-multiselect :deep(.multiselect__content-wrapper) {
+    border: 1px solid var(--border, #CBD5E1);
+    border-radius: 12px;
+    margin-top: 6px;
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.1);
+    background: var(--surface, #FFFFFF);
+    overflow: hidden;
+}
+
+.tag-multiselect :deep(.multiselect__element) {
+    margin: 0;
+}
+
+.tag-multiselect :deep(.multiselect__option) {
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--text-primary, #1E293B);
+    min-height: auto;
+    line-height: 1.4;
+    transition: background 0.15s ease;
+}
+
 .tag-multiselect :deep(.multiselect__option--highlight) {
-    background: var(--primary, #476996);
+    background: var(--bg-page, #F1F5F9);
+    color: var(--text-primary, #1E293B);
 }
 
 .tag-multiselect :deep(.multiselect__option--selected) {
     background: var(--primary-soft, #EEF2FF);
     color: var(--primary, #476996);
+    font-weight: 600;
 }
 
-/* Mode Toggle Inside */
-.mode-toggle-inside {
+.tag-multiselect :deep(.multiselect__option--selected.multiselect__option--highlight) {
+    background: rgba(239, 68, 68, 0.05);
+    color: var(--primary, #476996);
+}
+
+.tag-multiselect :deep(.multiselect__option--selected::after),
+.tag-multiselect :deep(.multiselect__option--selected.multiselect__option--highlight::after) {
+    content: '✓' !important;
+    color: var(--primary, #476996) !important;
+    background: none !important;
+    font-weight: 700;
+    padding-left: 8px;
+    font-size: 14px;
+}
+
+/* ===== Select Caret ===== */
+.tag-multiselect :deep(.multiselect__select) {
     position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 24px;
-    padding: 0 8px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    font-size: 11px;
-    font-weight: 800;
-    cursor: pointer;
-    z-index: 55;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mode-toggle-inside.or {
-    background: #e0e7ff;
-    color: #4f46e5;
-    border-color: #c7d2fe;
-}
-
-.mode-toggle-inside.or:hover {
-    background: #c7d2fe;
-}
-
-.mode-toggle-inside.and {
-    background: #dcfce7;
-    color: #16a34a;
-    border-color: #bbf7d0;
-}
-
-.mode-toggle-inside.and:hover {
-    background: #bbf7d0;
-}
-
-/* Transitions */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-    transition: all 0.3s ease;
-}
-
-.fade-slide-enter-from,
-.fade-slide-leave-to {
-    opacity: 0;
-    transform: translateX(-10px);
-    width: 0;
+    right: 1px;
+    top: 1px;
+    height: 42px;
+    width: 36px;
     padding: 0;
-    margin: 0;
-    overflow: hidden;
+}
+
+.tag-multiselect :deep(.multiselect__select::before) {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    border-style: solid;
+    border-width: 5px 5px 0 5px;
+    border-color: var(--text-secondary, #94A3B8) transparent transparent transparent;
+    content: '';
+}
+
+.tag-multiselect :deep(.multiselect--active .multiselect__select::before) {
+    top: 50%;
+    transform: translateY(-50%) rotate(180deg);
+}
+
+/* ===== Spinner ===== */
+.tag-multiselect :deep(.multiselect__spinner) {
+    background: var(--bg-page, #F1F5F9);
+    border-radius: 0 12px 12px 0;
+}
+
+/* ===== No Results ===== */
+.tag-multiselect :deep(.multiselect__option--disabled) {
+    background: transparent;
+    color: var(--text-secondary, #94A3B8);
+    font-size: 13px;
+}
+
+/* ===== Dark Mode ===== */
+:global(.dark) .tag-multiselect :deep(.multiselect__content-wrapper) {
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.3);
 }
 </style>
