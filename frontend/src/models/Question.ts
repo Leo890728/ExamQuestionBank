@@ -1,5 +1,7 @@
 export type QuestionType = 'multipleChoice' | 'essay'
+export const QuestionTypeList: QuestionType[] = ['multipleChoice', 'essay']
 export type QuestionDifficulty = 'easy' | 'normal' | 'hard' | 'insane'
+export const QuestionDifficultyList: QuestionDifficulty[] = ['easy', 'normal', 'hard', 'insane']
 
 export interface QuestionOptionRpc {
   id?: number

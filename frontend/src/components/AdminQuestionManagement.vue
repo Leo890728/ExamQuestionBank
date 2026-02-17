@@ -13,7 +13,7 @@
     <!-- Question Filters -->
     <div v-if="activeTab === 'list'" class="question-filters-wrapper">
       <QuestionFilterPanel v-model="filters" :tags="tagOptions" :loading="isLoading"
-        :total-count="paginationState.totalCount" :show-title="false" @search="applyFilters" @reset="resetFilters" />
+        :total-count="paginationState.totalCount" @search="applyFilters" @reset="resetFilters" />
 
       <!-- Ordering Filter -->
       <div class="ordering-filter">
@@ -324,8 +324,10 @@ const selectedPendingIds = ref([]) // 暫存題目選取索引
 const isLoading = ref(false)
 const error = ref('')
 const filters = ref({
+  category: '',
   subject: '',
   difficulty: '',
+  question_type: '',
   search: '',
   tags: [],
   tag_mode: 'or'
@@ -514,8 +516,10 @@ const fetchQuestions = async () => {
 const applyFilters = () => { currentPage.value = 1; fetchQuestions() }
 const resetFilters = () => {
   filters.value = {
+    category: '',
     subject: '',
     difficulty: '',
+    question_type: '',
     search: '',
     tags: [],
     tag_mode: 'or'

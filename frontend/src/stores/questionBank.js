@@ -38,7 +38,7 @@ export const useQuestionBankStore = defineStore('questionBank', {
   },
 
   actions: {
-    async fetchQuestions(page = 1, options = {}) {
+    async fetchQuestions(page = 1, page_size = 20, options = {}) {
       const { append = false } = options
       this.loading = true
       this.error = null
@@ -46,7 +46,8 @@ export const useQuestionBankStore = defineStore('questionBank', {
       try {
         const params = {
           ...this.filters,
-          page
+          page,
+          page_size
         }
 
         const response = await questionService.getQuestions(params)

@@ -93,7 +93,7 @@
     <!-- Search/Practice Mode: QuestionFilterPanel -->
     <div v-if="(viewMode === 'search' || mode === 'practice') && listMode === 'search'" class="filter-panel-container">
       <QuestionFilterPanel v-model="searchFilters" :tags="tags" :loading="searchLoading" :total-count="totalSearchCount"
-        :show-source-filter="showSourceFilter" @search="handleSearch" @reset="handleResetFilters" />
+        @search="handleSearch" @reset="handleResetFilters" />
     </div>
 
     <!-- Selection Toolbar (with custom slots for practice mode) -->
@@ -326,12 +326,13 @@ const searchQuery = ref('')
 const selectedIds = ref([])
 const viewMode = ref('exam') // 'exam' or 'search'
 const searchFilters = ref({
+  category: '',
   subject: '',
   difficulty: '',
+  question_type: '',
   search: '',
   tags: [],
-  tag_mode: 'or',
-  source: 'all'
+  tag_mode: 'or'
 })
 const searchCurrentPage = ref(1)
 const searchPageSize = ref(20)
@@ -445,8 +446,10 @@ const handleSearch = () => {
 
 const handleResetFilters = () => {
   searchFilters.value = {
+    category: '',
     subject: '',
     difficulty: '',
+    question_type: '',
     search: '',
     tags: [],
     tag_mode: 'or'
