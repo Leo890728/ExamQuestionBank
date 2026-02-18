@@ -4,7 +4,7 @@
         <header class="page-header" :class="{ 'has-changes': hasChanges }">
             <div class="header-left">
                 <span v-if="hasChanges" class="unsaved-icon">⚠</span>
-                <h1 class="page-title">Create New Exam</h1>
+                <h1 class="page-title">{{ examInfo?.id ? "Edit Exam" : "Create New Exam" }}</h1>
                 <template v-if="hasChanges">
                     <span class="unsaved-sep">·</span>
                     <span class="unsaved-detail">{{ unsavedSummary }}</span>
@@ -115,9 +115,10 @@
                         </div>
                     </div>
 
-                    <TableList :showHeader="false" :items="filterQuestions()" :columns="tableColumns"
-                        :row-class="getRowClass" :draggable="true" :showPagination="true" :sort-key="sortKey"
-                        :sort-order="sortOrder" @sort-change="handleSortChange" @reorder="handleReorder">
+                    <TableList :showHeader="false" :emptyText="'暫無題目'" :itemUnit="'題'" :items="filterQuestions()"
+                        :columns="tableColumns" :row-class="getRowClass" :draggable="true" :showPagination="true"
+                        :sort-key="sortKey" :sort-order="sortOrder" @sort-change="handleSortChange"
+                        @reorder="handleReorder">
                         <template #cell-content="{ item }">
                             <div class="col-content">
                                 <div class="q-text">{{ item.content }}</div>
@@ -320,6 +321,19 @@ const questionDifficultyChartData = computed(() => {
     const mcqCount = qs.filter(q => q.type === 'multipleChoice').length
     const essayCount = qs.filter(q => q.type !== 'multipleChoice').length
 
+    if (!qs.length) {
+        return {
+            datasets: [
+                {
+                    label: '暫無題目',
+                    data: [1],
+                    backgroundColor: ['#e5e7eb'],
+                    weight: 1,
+                }
+            ]
+        }
+    }
+
     return {
         labels: ['簡單', '普通', '困難', '極難'],
         datasets: [
@@ -336,7 +350,7 @@ const questionDifficultyChartData = computed(() => {
                 data: [mcqCount, essayCount],
                 backgroundColor: ['#476996', '#94a3b8'],
                 weight: 1,
-            },
+            }
         ],
     };
 });
@@ -349,18 +363,53 @@ const datasetLabels = [
 const chartOptions = {
     responsive: true,
     plugins: {
-        legend: { position: 'bottom' },
+        legend: {
+            position: 'bottom',
+            labels: {
+                generateLabels: (chart) => {
+                    const datasets = chart.data.datasets
+                    if (!datasets.length) return []
+                    if (!examQuestions.value.length) return []
+                    const items = []
+                    datasets.forEach((ds, di) => {
+                        const labels = datasetLabels[di] || []
+                        labels.forEach((label, i) => {
+                            const meta = chart.getDatasetMeta(di)
+                            const hidden = meta.data[i] ? meta.data[i].hidden : false
+                            items.push({
+                                text: label,
+                                fillStyle: ds.backgroundColor[i],
+                                strokeStyle: ds.backgroundColor[i],
+                                hidden,
+                                datasetIndex: di,
+                                index: i,
+                            })
+                        })
+                    })
+                    return items
+                },
+            },
+            onClick: (_e, legendItem, legend) => {
+                const { datasetIndex, index } = legendItem
+                const meta = legend.chart.getDatasetMeta(datasetIndex)
+                const item = meta.data[index]
+                if (item) {
+                    item.hidden = !item.hidden
+                    legend.chart.update()
+                }
+            },
+        },
         tooltip: {
             callbacks: {
                 title: (items) => {
                     if (!items.length) return ''
                     const { datasetIndex, dataIndex } = items[0]
-                    return datasetLabels[datasetIndex]?.[dataIndex] || ''
+                    return !examQuestions.value.length ? '' : datasetLabels[datasetIndex]?.[dataIndex] || ''
                 },
                 label: (ctx) => {
                     const label = datasetLabels[ctx.datasetIndex]?.[ctx.dataIndex] || ''
                     const value = ctx.raw || 0
-                    return `${label}: ${value} 題`
+                    return !examQuestions.value.length ? ' 暫無題目' : ` ${label}: ${value} 題`
                 }
             }
         }
@@ -399,7 +448,7 @@ const {
 const searchSelectedIds = ref([])
 
 const difficultyLabel = (d) => {
-    const map = { easy: '簡單', normal: '普通', hard: '困難', insane: '地獄' }
+    const map = { easy: '簡單', normal: '普通', hard: '困難', insane: '極難' }
     return map[d] || d || '未知'
 }
 
