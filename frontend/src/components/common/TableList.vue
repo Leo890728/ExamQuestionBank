@@ -53,7 +53,7 @@
             </div>
 
             <!-- Data Rows -->
-            <draggable v-if="draggable" v-model="dragList" class="table-body" tag="div" item-key="id"
+            <VueDraggable v-if="draggable" v-model="dragList" class="table-body" tag="div" item-key="id"
                 handle=".grip-cell" :animation="200" ghost-class="drag-ghost" drag-class="drag-active"
                 @end="handleDragEnd">
                 <template #item="{ element: item, index }">
@@ -74,7 +74,7 @@
                         </div>
                     </div>
                 </template>
-            </draggable>
+            </VueDraggable>
             <div v-else class="table-body">
                 <div v-for="(item, index) in displayItems" :key="item.id" class="table-row"
                     :class="[{ selected: selectedIds.includes(item.id) }, rowClass?.(item)]" :style="{ gridTemplateColumns: gridColumns }"
@@ -106,7 +106,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import draggable from 'vuedraggable'
+import VueDraggable from 'vuedraggable'
 import SelectionToolbar from './SelectionToolbar.vue'
 import PaginationControl from './PaginationControl.vue'
 
