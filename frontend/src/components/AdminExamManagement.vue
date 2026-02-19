@@ -1,6 +1,6 @@
 <template>
     <div class="exam-admin">
-        <!-- Exam Filters -->
+        <!-- Search Filter -->
         <div class="exam-filters">
             <div class="filter-search">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -8,46 +8,8 @@
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.35-4.35"></path>
                 </svg>
-                <input v-model="searchTerm" type="text" class="filter-input" placeholder="搜尋考卷名稱或說明..."
-                    @keyup.enter="applyFilters" />
+                <input v-model="searchTerm" type="text" class="filter-input" placeholder="搜尋考卷名稱或說明..." />
             </div>
-
-            <div class="filter-select-wrapper">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" class="select-icon">
-                    <line x1="4" y1="21" x2="4" y2="14"></line>
-                    <line x1="4" y1="10" x2="4" y2="3"></line>
-                    <line x1="12" y1="21" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12" y2="3"></line>
-                    <line x1="20" y1="21" x2="20" y2="16"></line>
-                    <line x1="20" y1="12" x2="20" y2="3"></line>
-                    <line x1="1" y1="14" x2="7" y2="14"></line>
-                    <line x1="9" y1="8" x2="15" y2="8"></line>
-                    <line x1="17" y1="16" x2="23" y2="16"></line>
-                </svg>
-                <select v-model="ordering" class="filter-select" @change="applyFilters">
-                    <option v-for="option in orderingOptions" :key="option.value" :value="option.value">
-                        {{ option.label }}
-                    </option>
-                </select>
-            </div>
-
-            <button class="filter-btn filter-btn-reset" @click="resetFilters">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10"></polyline>
-                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                </svg>
-                <span>重設</span>
-            </button>
-            <button class="filter-btn filter-btn-search" @click="applyFilters">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <span>搜尋</span>
-            </button>
         </div>
 
         <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -55,66 +17,133 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <!-- Exam List using AdminDataList -->
-        <AdminDataList ref="adminDataListRef" type="exam" :items="filteredExams" :loading="isLoading"
-            :total-count="paginationState.totalCount" :show-header="false" :show-pagination="true" item-unit="張考卷"
-            empty-text="暫無符合條件的考卷" empty-hint="嘗試調整篩選條件或新增考卷" :current-page="currentPage" :page-size="pageSize"
-            :pagination-state="paginationState" :has-more-actions="true" @update:selected-ids="handleSelectionChange"
-            @view="handleViewExam" @edit="handleEditExam" @delete="handleDeleteExam" @page-change="handlePageChange"
-            @size-change="handleSizeChange">
+        <!-- Exam List using TableList -->
+        <TableList ref="tableListRef" :items="filteredExams" :loading="examStore.listLoading" :columns="examColumns"
+            :draggable="false" :sort-key="sortKey" :sort-order="sortOrder" title="考卷列表"
+            subtitle="管理所有考卷與發布狀態" item-unit="張考卷" empty-text="暫無符合條件的考卷"
+            empty-hint="嘗試調整篩選條件或新增考卷" @sort-change="handleSortChange"
+            @update:selected-ids="handleSelectionChange">
             <!-- Custom header icon -->
             <template #header-icon>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2">
+                    </path>
+                    <rect x="9" y="3" width="6" height="4" rx="1"></rect>
+                    <path d="M9 14l2 2 4-4"></path>
                 </svg>
             </template>
 
-            <!-- Custom item actions -->
-            <template #item-actions="{ item }">
-                <button class="action-btn action-btn-view" @click="viewExam(item.id)" title="檢視">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            <!-- Header actions -->
+            <template #header-actions>
+                <button class="header-btn header-btn-primary" @click="addExam">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
+                    <span>新增考卷</span>
                 </button>
-                <button class="action-btn action-btn-edit" @click="editExam(item.id)" title="編輯">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                <button class="header-btn header-btn-outline" @click="batchImport">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                </button>
-                <button class="action-btn action-btn-info" @click="exportExam(item.id)" title="匯出"
-                    :disabled="exportingExams[item.id]">
-                    <div v-if="exportingExams[item.id]" class="action-spinner"></div>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
+                    <span>匯入</span>
                 </button>
-                <button class="action-btn action-btn-info" @click="printExam(item.id)" title="列印">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                        <rect x="6" y="14" width="12" height="8"></rect>
-                    </svg>
-                </button>
-                <button class="action-btn action-btn-delete" @click="deleteExam(item.id)" title="刪除"
-                    :disabled="deletingExamId === item.id">
-                    <div v-if="deletingExamId === item.id" class="action-spinner"></div>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                        </path>
-                    </svg>
-                </button>
+            </template>
+
+            <!-- Question count cell -->
+            <template #cell-questionCount="{ item }">
+                <span class="question-count">{{ item.questionCount }}</span>
+            </template>
+
+            <!-- Time limit cell -->
+            <template #cell-timeLimit="{ item }">
+                <span>{{ item.timeLimit ? item.timeLimit + ' min' : '—' }}</span>
+            </template>
+
+            <!-- Publish status cell -->
+            <template #cell-publish="{ item }">
+                <span class="publish-badge" :class="item.publish ? 'published' : 'draft'">
+                    {{ item.publish ? '已發布' : '草稿' }}
+                </span>
+            </template>
+
+            <!-- Created at cell -->
+            <template #cell-createdAt="{ item }">
+                <span class="date-text">{{ item.createdAt }}</span>
+            </template>
+
+            <!-- Actions cell -->
+            <template #cell-actions="{ item }">
+                <div class="row-actions" @click.stop>
+                    <button class="action-btn action-btn-view" @click="viewExam(item.id)" title="檢視">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                    <button class="action-btn action-btn-edit" @click="editExam(item.id)" title="編輯">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                    <button class="action-btn action-btn-delete" @click="deleteExam(item.id)" title="刪除"
+                        :disabled="deletingExamId === item.id">
+                        <div v-if="deletingExamId === item.id" class="action-spinner"></div>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
+                        </svg>
+                    </button>
+                    <!-- More actions dropdown (Bootstrap) -->
+                    <div class="dropdown">
+                        <button class="action-btn action-btn-more" v-bs-dropdown
+                            data-bs-toggle="dropdown" title="更多">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="12" cy="5" r="1"></circle>
+                                <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <button class="dropdown-item" @click="exportExam(item.id)"
+                                    :disabled="exportingExams[item.id]">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    <span>{{ exportingExams[item.id] ? '匯出中...' : '匯出 JSON' }}</span>
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" @click="printExam(item.id)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path
+                                            d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                        </path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    <span>列印考卷</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </template>
 
             <!-- Custom selection toolbar actions -->
@@ -142,7 +171,7 @@
                     <span>{{ isDeletingSelected ? '刪除中...' : '刪除' }}</span>
                 </button>
             </template>
-        </AdminDataList>
+        </TableList>
 
         <ExamDetailModal :visible="isExamDetailVisible" :exam="selectedExamDetail" :loading="isExamDetailLoading"
             :error="examDetailError" @close="closeExamDetail" />
@@ -156,22 +185,31 @@
 <script setup>
 import { computed, onMounted, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import questionService from '@/services/questionService'
 import ExamDetailModal from '@/components/ExamDetailModal.vue'
 import { usePdfImportStore } from '@/stores/pdfImport'
-import { useExamStore } from '@/stores/examStore'
-import AdminDataList from '@/components/common/AdminDataList.vue'
+import { useExamStore } from '@/stores/test/exam'
+import { examApi } from '@/api/test/exam'
+import { Dropdown } from 'bootstrap'
+import TableList from '@/components/common/TableList.vue'
 
-const emit = defineEmits(['show-import-progress', 'hide-import-progress', 'show-import-result', 'show-export-progress', 'hide-export-progress'])
+// Directive: init Bootstrap Dropdown with fixed Popper strategy
+const vBsDropdown = {
+    mounted(el) {
+        new Dropdown(el, {
+            popperConfig(defaultConfig) {
+                return { ...defaultConfig, strategy: 'fixed' }
+            }
+        })
+    },
+    beforeUnmount(el) {
+        Dropdown.getInstance(el)?.dispose()
+    }
+}
 
-const exams = ref([])
-const isLoading = ref(false)
 const errorMessage = ref('')
 const searchTerm = ref('')
-const ordering = ref('-created_at')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const paginationState = ref({ hasNext: false, hasPrev: false, totalPages: 0, totalCount: 0 })
+const sortKey = ref('createdAt')
+const sortOrder = ref('desc')
 const selectedExamDetail = ref(null)
 const isExamDetailVisible = ref(false)
 const isExamDetailLoading = ref(false)
@@ -182,17 +220,22 @@ const exportingExams = reactive({})
 const selectedExamIds = ref([])
 const isDeletingSelected = ref(false)
 const jsonImportInput = ref(null)
-const adminDataListRef = ref(null)
+const tableListRef = ref(null)
+
 
 const router = useRouter()
 const examStore = useExamStore()
 const pdfImportStore = usePdfImportStore()
 
-const orderingOptions = [
-    { label: '最新建立', value: '-created_at' },
-    { label: '最舊建立', value: 'created_at' },
-    { label: '最近更新', value: '-updated_at' },
-    { label: '名稱 (A-Z)', value: 'name' }
+const examColumns = [
+    { key: 'id', label: 'ID', width: '44px', sortable: true },
+    { key: 'name', label: '名稱', width: '1.5fr', sortable: true },
+    { key: 'description', label: '描述', width: '2fr' },
+    { key: 'questionCount', label: '題數', width: '44px', align: 'center', sortable: true },
+    { key: 'timeLimit', label: '時限', width: '56px', align: 'center' },
+    { key: 'publish', label: '狀態', width: '62px', align: 'center', sortable: true },
+    { key: 'createdAt', label: '建立', width: '84px', sortable: true },
+    { key: 'actions', label: '操作', width: '140px', align: 'center' }
 ]
 
 const formatDateTime = (value) => {
@@ -200,7 +243,7 @@ const formatDateTime = (value) => {
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return value
     return new Intl.DateTimeFormat('zh-TW', {
-        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        year: 'numeric', month: '2-digit', day: '2-digit'
     }).format(date)
 }
 
@@ -210,102 +253,80 @@ const normalizeExam = (exam) => ({
     description: exam.description || '—',
     questionCount: exam.question_count ?? 0,
     timeLimit: exam.time_limit ?? null,
+    publish: exam.publish ?? false,
     createdAt: formatDateTime(exam.created_at),
     updatedAt: formatDateTime(exam.updated_at),
-    // For AdminDataList compatibility
-    created_at: exam.created_at,
-    updated_at: exam.updated_at
+    _raw: exam
+})
+
+// Map camelCase column keys to raw snake_case field names
+const sortKeyMap = {
+    id: 'id',
+    name: 'name',
+    questionCount: 'question_count',
+    publish: 'publish',
+    createdAt: 'created_at',
+}
+
+const handleSortChange = ({ key, order }) => {
+    sortKey.value = key
+    sortOrder.value = order
+}
+
+const sortedExams = computed(() => {
+    const list = [...examStore.exams].map(normalizeExam)
+    if (!sortKey.value) return list
+    const rawKey = sortKeyMap[sortKey.value] || sortKey.value
+    list.sort((a, b) => {
+        const av = a._raw[rawKey] ?? ''
+        const bv = b._raw[rawKey] ?? ''
+        const cmp = av < bv ? -1 : av > bv ? 1 : 0
+        return sortOrder.value === 'asc' ? cmp : -cmp
+    })
+    return list
 })
 
 const filteredExams = computed(() => {
     const term = searchTerm.value.trim().toLowerCase()
-    if (!term) return exams.value
-    return exams.value.filter((exam) => {
+    if (!term) return sortedExams.value
+    return sortedExams.value.filter((exam) => {
         const haystack = [exam.name, exam.description, exam.questionCount?.toString(), exam.timeLimit?.toString(),
-        exam.createdAt, exam.updatedAt, exam.id?.toString()].filter(Boolean).map((v) => v.toLowerCase()).join(' ')
+        exam.createdAt, exam.id?.toString()].filter(Boolean).map((v) => v.toLowerCase()).join(' ')
         return haystack.includes(term)
     })
 })
 
-// Handler methods for AdminDataList component
 const handleSelectionChange = (ids) => {
     selectedExamIds.value = ids
 }
 
-const handleViewExam = (item) => {
-    viewExam(item.id)
-}
-
-const handleEditExam = (item) => {
-    editExam(item.id)
-}
-
-const handleDeleteExam = (item) => {
-    deleteExam(item.id)
-}
 
 const fetchExams = async () => {
-    isLoading.value = true
     errorMessage.value = ''
     try {
-        const params = { page: currentPage.value, page_size: pageSize.value }
-        if (searchTerm.value.trim()) params.search = searchTerm.value.trim()
-        if (ordering.value) params.ordering = ordering.value
-        const { data } = await examStore.getExams(params)
-        const list = Array.isArray(data) ? data : data.results ?? []
-        exams.value = list.map(normalizeExam)
-        if (Array.isArray(data)) {
-            paginationState.value = { hasNext: false, hasPrev: false, totalPages: 1, totalCount: data.length }
-        } else {
-            const count = data.count || 0
-            paginationState.value = {
-                hasNext: Boolean(data.next),
-                hasPrev: Boolean(data.previous) || currentPage.value > 1,
-                totalPages: Math.ceil(count / pageSize.value) || 1,
-                totalCount: count
-            }
-        }
+        await examStore.loadExams()
     } catch (error) {
         console.error('Failed to fetch exams', error)
-        errorMessage.value = error.response?.data?.detail || '取得考卷列表失敗，請稍後再試。'
-    } finally {
-        isLoading.value = false
+        errorMessage.value = error.message || '取得考卷列表失敗，請稍後再試。'
     }
 }
-
-const applyFilters = () => { currentPage.value = 1; fetchExams() }
-const resetFilters = () => { searchTerm.value = ''; ordering.value = '-created_at'; currentPage.value = 1; fetchExams() }
-
-const handlePageChange = (page) => {
-    if (page !== currentPage.value && page >= 1 && page <= paginationState.value.totalPages) {
-        currentPage.value = page
-        fetchExams()
-    }
-}
-
-const handleSizeChange = (size) => {
-    pageSize.value = size
-    currentPage.value = 1
-    fetchExams()
-}
-
 
 const normalizeExamDetail = (exam) => ({
     id: exam.id, name: exam.name, description: exam.description || '—', timeLimit: exam.time_limit ?? null,
     createdAt: formatDateTime(exam.created_at), updatedAt: formatDateTime(exam.updated_at),
-    examQuestions: (exam.exam_questions ?? []).map((q, i) => ({
+    examQuestions: (exam.questions ?? []).map((q, i) => ({
         id: q.id ?? i, order: q.order ?? i + 1, points: q.points ?? null,
-        questionContent: q.question_content || '—', questionSubject: q.question_subject || '', questionCategory: q.question_category || ''
+        questionContent: q.content || '—', questionSubject: '', questionCategory: ''
     }))
 })
 
 const viewExam = async (id) => {
     isExamDetailVisible.value = true; isExamDetailLoading.value = true; examDetailError.value = ''; selectedExamDetail.value = null
     try {
-        const { data } = await examStore.getExam(id)
+        const data = await examApi.getExamDetail(id)
         selectedExamDetail.value = normalizeExamDetail(data)
     } catch (error) {
-        examDetailError.value = error.response?.data?.detail || '無法取得考卷詳細資訊。'
+        examDetailError.value = error.message || '無法取得考卷詳細資訊。'
     } finally { isExamDetailLoading.value = false }
 }
 
@@ -320,10 +341,8 @@ const deleteExam = async (id) => {
     try {
         await examStore.deleteExam(id)
         alert('考卷已刪除')
-        await fetchExams()
-        if (!exams.value.length && currentPage.value > 1) { currentPage.value -= 1; await fetchExams() }
     } catch (error) {
-        alert(error.response?.data?.detail || '刪除考卷失敗，請稍後再試。')
+        alert(error.message || '刪除考卷失敗，請稍後再試。')
     } finally { deletingExamId.value = null }
 }
 
@@ -336,28 +355,24 @@ const deleteSelectedExams = async () => {
         try {
             await examStore.deleteExam(id)
             successCount++
-            selectedExamIds.value.splice(selectedExamIds.value.indexOf(id), 1)
         } catch { failCount++ }
     }
     isDeletingSelected.value = false
     alert(failCount === 0 ? `成功刪除 ${successCount} 張考卷` : `刪除完成：成功 ${successCount} 張，失敗 ${failCount} 張`)
-    // Clear selection in AdminDataList component
-    if (adminDataListRef.value) {
-        adminDataListRef.value.clearSelection()
+    if (tableListRef.value) {
+        tableListRef.value.clearSelection()
     }
-    fetchExams()
 }
 
 const exportExam = async (examId) => {
     if (exportingExams[examId]) return
     exportingExams[examId] = true
     try {
-        const { data } = await examStore.getExam(examId)
-        const exportItem = { id: data.id, name: data.name, description: data.description, time_limit: data.time_limit, exam_questions: [] }
-        if (Array.isArray(data.exam_questions)) {
-            for (const eq of data.exam_questions) {
-                let qId = eq.question ? (typeof eq.question === 'object' ? eq.question.id : eq.question) : eq.question_id
-                if (qId) exportItem.exam_questions.push({ question_id: qId, order: eq.order, points: eq.points })
+        const data = await examApi.getExamDetail(examId)
+        const exportItem = { id: data.id, name: data.name, description: data.description, time_limit: data.time_limit, questions: [] }
+        if (Array.isArray(data.questions)) {
+            for (const q of data.questions) {
+                exportItem.questions.push({ question_id: q.id, order: q.order, points: q.points })
             }
         }
         const blob = new Blob([JSON.stringify(exportItem, null, 2)], { type: 'application/json' })
@@ -377,9 +392,9 @@ const exportSelectedExams = async () => {
         const exportData = []
         for (const examId of selectedExamIds.value) {
             try {
-                const { data } = await examStore.getExam(examId)
-                const examQuestions = (data.exam_questions || []).filter(eq => eq.question).map(eq => ({ question_id: eq.question, order: eq.order, points: eq.points }))
-                exportData.push({ id: data.id, name: data.name, description: data.description, time_limit: data.time_limit, exam_questions: examQuestions })
+                const data = await examApi.getExamDetail(examId)
+                const questions = (data.questions || []).map(q => ({ question_id: q.id, order: q.order, points: q.points }))
+                exportData.push({ id: data.id, name: data.name, description: data.description, time_limit: data.time_limit, questions })
             } catch { }
         }
         if (exportData.length === 0) { alert('沒有可匯出的考卷'); return }
@@ -403,22 +418,24 @@ const handleImportFile = async (event) => {
         const items = Array.isArray(parsed) ? parsed : [parsed]
         for (const item of items) {
             if (!item.name) continue
-            const examData = { name: item.name, description: item.description || '', time_limit: item.time_limit || null }
-            const res = await examStore.createExam(examData)
-            const newExamId = res.data?.id
-            if (newExamId && Array.isArray(item.exam_questions)) {
-                for (const eq of item.exam_questions) {
-                    if (eq.question_id) {
+            const newExam = await examStore.createExam({
+                name: item.name, description: item.description || '', time_limit: item.time_limit || null
+            })
+            if (newExam?.id && Array.isArray(item.exam_questions || item.questions)) {
+                for (const eq of (item.exam_questions || item.questions)) {
+                    const qId = eq.question_id || eq.id
+                    if (qId) {
                         try {
-                            const exists = await questionService.getQuestion(eq.question_id).catch(() => null)
-                            if (exists?.data) await examStore.addQuestionToExam(newExamId, { question: eq.question_id, order: eq.order, points: eq.points })
+                            await examApi.addExamQuestion(newExam.id, {
+                                question_id: qId, order: eq.order ?? 1, points: eq.points ?? 1
+                            })
                         } catch { }
                     }
                 }
             }
         }
         alert('匯入完成')
-        fetchExams()
+        await fetchExams()
     } catch (error) { alert('匯入失敗：' + (error.message || '格式錯誤')) }
     finally { event.target.value = '' }
 }
@@ -435,21 +452,11 @@ onMounted(() => { fetchExams() })
 <style scoped>
 /* Filters */
 .exam-filters {
-    display: flex;
-    gap: 12px;
     margin-bottom: 24px;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    border: 1px solid var(--border, #CBD5E1);
-    flex-wrap: wrap;
 }
 
 .filter-search {
     position: relative;
-    flex: 1;
-    min-width: 280px;
 }
 
 .search-icon {
@@ -478,71 +485,125 @@ onMounted(() => { fetchExams() })
     box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
 }
 
-.filter-select-wrapper {
-    position: relative;
-    min-width: 200px;
-}
-
-.select-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-secondary, #64748B);
-    pointer-events: none;
-}
-
-.filter-select {
-    width: 100%;
-    padding: 12px 16px 12px 44px;
-    border: 2px solid #e5e7eb;
-    border-radius: 10px;
-    font-size: 14px;
-    background: #f9fafb;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.filter-select:focus {
-    outline: none;
-    border-color: var(--primary, #476996);
-    background: white;
-    box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
-
-.filter-btn {
+/* Header Buttons */
+.header-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    border: none;
+    gap: 6px;
+    padding: 10px 16px;
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    border: none;
     white-space: nowrap;
 }
 
-.filter-btn-reset {
-    background: #f3f4f6;
-    color: var(--text-secondary, #64748B);
-}
-
-.filter-btn-reset:hover {
-    background: #e5e7eb;
-    color: var(--text-primary, #1E293B);
-}
-
-.filter-btn-search {
+.header-btn-primary {
     background: var(--primary, #476996);
     color: white;
 }
 
-.filter-btn-search:hover {
+.header-btn-primary:hover {
     background: var(--primary-hover, #35527a);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(71, 105, 150, 0.3);
+}
+
+.header-btn-outline {
+    background: white;
+    color: var(--text-primary, #1E293B);
+    border: 2px solid var(--border, #E2E8F0);
+}
+
+.header-btn-outline:hover {
+    border-color: var(--text-secondary, #94A3B8);
+    background: var(--bg-page, #F8FAFC);
+}
+
+/* Cell Styles */
+.question-count {
+    font-weight: 600;
+    color: var(--primary, #476996);
+}
+
+.publish-badge {
+    display: inline-flex;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.publish-badge.published {
+    background: #A7F3D0;
+    color: #065F46;
+}
+
+.publish-badge.draft {
+    background: #FCD34D;
+    color: #92400E;
+}
+
+.date-text {
+    font-size: 12px;
+    color: var(--text-muted, #94A3B8);
+}
+
+/* Row Actions */
+.row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex-wrap: nowrap;
+}
+
+.row-actions .action-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* More Actions Dropdown (Bootstrap) */
+.action-btn-more {
+    color: var(--text-secondary, #64748B);
+}
+
+.action-btn-more:hover {
+    background: #F3F4F6;
+}
+
+.row-actions :deep(.dropdown-menu) {
+    min-width: 150px;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border, #E2E8F0);
+    padding: 4px 0;
+}
+
+.row-actions :deep(.dropdown-item) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text-primary, #1E293B);
+}
+
+.row-actions :deep(.dropdown-item:hover) {
+    background-color: var(--bg-page, #F1F5F9);
+    color: var(--text-primary, #1E293B);
+}
+
+.row-actions :deep(.dropdown-item:disabled) {
+    opacity: 0.5;
+}
+
+.row-actions :deep(.dropdown-item svg) {
+    color: var(--text-secondary, #64748B);
+    flex-shrink: 0;
 }
 
 /* Toolbar spinner */
@@ -569,5 +630,15 @@ onMounted(() => { fetchExams() })
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Dark mode for dropdown */
+:global(.dark) .row-actions .dropdown-menu {
+    background: var(--surface) !important;
+    border-color: var(--border) !important;
+}
+
+:global(.dark) .row-actions .dropdown-item:hover {
+    background-color: var(--surface-muted) !important;
 }
 </style>
