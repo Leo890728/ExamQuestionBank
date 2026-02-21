@@ -37,6 +37,13 @@
         <span class="badge">{{ item.question_subject }}</span>
         <span class="badge">{{ item.question_category }}</span>
         <span class="points">{{ item.points }} 分</span>
+        <button 
+          class="btn-note" 
+          @click.stop="handleOpenNote"
+          title="筆記"
+        >
+          <i class="bi bi-journal-plus"></i>
+        </button>
       </div>
     </div>
     <button
@@ -50,7 +57,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   item: {
     type: Object,
     required: true
@@ -73,7 +80,21 @@ defineProps({
   }
 })
 
-defineEmits(['select', 'remove', 'toggle-check'])
+
+
+const emit = defineEmits(['select', 'remove', 'toggle-check'])
+
+// Direct integration with Note Store
+import { useNoteStore } from '../stores/noteStore'
+const noteStore = useNoteStore()
+
+function handleOpenNote() {
+    noteStore.openDrawer({ 
+        type: 'question', 
+        id: props.item.id,
+        order: props.item.order 
+    })
+}
 </script>
 
 <style scoped>
@@ -183,6 +204,7 @@ defineEmits(['select', 'remove', 'toggle-check'])
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -247,6 +269,7 @@ defineEmits(['select', 'remove', 'toggle-check'])
     font-size: 12px;
   }
 
+
   /* Always show delete button on mobile (no hover) */
   .btn-delete {
     opacity: 1;
@@ -255,5 +278,25 @@ defineEmits(['select', 'remove', 'toggle-check'])
     background: #ffe5e5; /* Softer background for always-visible */
     color: #c0392b;
   }
+}
+
+.btn-note {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-note:hover {
+  background: var(--surface-muted);
+  color: var(--primary);
+  transform: scale(1.1);
 }
 </style>
