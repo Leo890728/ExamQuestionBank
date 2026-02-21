@@ -44,16 +44,25 @@
 
             <div class="feature-grid">
               <div class="feature-box">
-                <i class="bi bi-book"></i>
-                <span>法條分析</span>
+                <i class="bi bi-search"></i>
+                <div class="feature-text">
+                  <span class="feature-title">爭點分析</span>
+                  <span class="feature-desc">精準識別題目中的法律爭點</span>
+                </div>
               </div>
               <div class="feature-box">
                 <i class="bi bi-mortarboard"></i>
-                <span>學說見解</span>
+                <div class="feature-text">
+                  <span class="feature-title">學說實務</span>
+                  <span class="feature-desc">整理學說與實務見解對比</span>
+                </div>
               </div>
               <div class="feature-box">
                 <i class="bi bi-diagram-3"></i>
-                <span>答題架構</span>
+                <div class="feature-text">
+                  <span class="feature-title">答題架構</span>
+                  <span class="feature-desc">三段論法完整答題示範</span>
+                </div>
               </div>
             </div>
           </div>
@@ -122,6 +131,8 @@
 <script setup>
 import { ref, nextTick, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { useEssayAnalysisStore } from '@/stores/essayAnalysisStore'
 
 const store = useEssayAnalysisStore()
@@ -204,7 +215,10 @@ const copyMessage = async (content) => {
   }
 }
 
-const formatMessage = (text = '') => text.replace(/\n/g, '<br>')
+const formatMessage = (text = '') => {
+  if (!text) return ''
+  return DOMPurify.sanitize(marked.parse(text))
+}
 const truncate = (str, len) => str && str.length > len ? str.slice(0, len) + '...' : str
 
 onMounted(() => {
@@ -447,9 +461,23 @@ onMounted(() => {
   color: var(--primary);
 }
 
-.feature-box span {
-  font-size: 13px;
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  align-items: center;
+}
+
+.feature-title {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-primary);
+}
+
+.feature-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 /* Messages */
@@ -507,6 +535,91 @@ onMounted(() => {
   line-height: 1.75;
   color: var(--text-primary);
   word-wrap: break-word;
+}
+
+/* Markdown rendering styles */
+.message-text :deep(h2) {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 20px 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary, #2563eb);
+  color: var(--primary, #2563eb);
+}
+
+.message-text :deep(h2:first-child) {
+  margin-top: 0;
+}
+
+.message-text :deep(h3) {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 8px 0;
+  color: var(--text-primary);
+}
+
+.message-text :deep(ul),
+.message-text :deep(ol) {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.message-text :deep(li) {
+  margin: 4px 0;
+}
+
+.message-text :deep(strong) {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.message-text :deep(blockquote) {
+  border-left: 3px solid var(--primary, #2563eb);
+  margin: 12px 0;
+  padding: 8px 16px;
+  background: var(--primary-soft, rgba(37, 99, 235, 0.06));
+  border-radius: 0 8px 8px 0;
+  font-size: 14px;
+}
+
+.message-text :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.message-text :deep(th),
+.message-text :deep(td) {
+  border: 1px solid var(--border, #e5e7eb);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.message-text :deep(th) {
+  background: var(--bg-soft, #f8fafc);
+  font-weight: 600;
+}
+
+.message-text :deep(hr) {
+  border: none;
+  border-top: 1px solid var(--border, #e5e7eb);
+  margin: 16px 0;
+}
+
+.message-text :deep(p) {
+  margin: 8px 0;
+}
+
+.message-text :deep(p:first-child) {
+  margin-top: 0;
+}
+
+.message-text :deep(code) {
+  background: var(--bg-soft, #f1f5f9);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
 }
 
 .message-actions {

@@ -43,7 +43,7 @@ export const useEssayAnalysisStore = defineStore('essayAnalysis', () => {
   const loadHistory = async () => {
     isHistoryLoading.value = true
     try {
-      const data = await essayAnalysisService.getHistory()
+      const data = await essayAnalysisService.getHistory(20, 0)
       historyItems.value = Array.isArray(data) ? data : (data?.results ?? [])
     } catch (error) {
       console.error('Failed to load essay analysis history:', error)

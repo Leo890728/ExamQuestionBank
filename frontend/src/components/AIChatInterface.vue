@@ -90,6 +90,8 @@
 import { ref, watch, nextTick, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { useChatStore } from '@/stores/chatStore'
 
 const router = useRouter()
@@ -171,7 +173,10 @@ const clearChat = () => {
   }
 }
 
-const formatMessage = (text = '') => text.replace(/\n/g, '<br>')
+const formatMessage = (text = '') => {
+  if (!text) return ''
+  return DOMPurify.sanitize(marked.parse(text))
+}
 
 const formatTime = (date) => {
   if (!date) return ''
