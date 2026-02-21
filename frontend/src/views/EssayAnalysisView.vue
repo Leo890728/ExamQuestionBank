@@ -388,6 +388,9 @@ onMounted(() => {
 .welcome-icon {
   width: 64px;
   height: 64px;
+  min-width: 64px;
+  min-height: 64px;
+  flex-shrink: 0;
   background: linear-gradient(135deg, var(--primary), #4f46e5);
   border-radius: 50%;
   display: grid;
