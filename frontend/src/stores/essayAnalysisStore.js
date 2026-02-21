@@ -21,10 +21,10 @@ export const useEssayAnalysisStore = defineStore('essayAnalysis', () => {
 
     isLoading.value = true
     try {
-      const response = await essayAnalysisService.analyze(questionText.trim())
+      const response = await essayAnalysisService.analyzeEssay(questionText.trim())
       messages.value.push({
         role: 'assistant',
-        content: response.analysis,
+        content: response?.analysis ?? response?.result ?? JSON.stringify(response),
         timestamp: new Date()
       })
 
@@ -43,8 +43,8 @@ export const useEssayAnalysisStore = defineStore('essayAnalysis', () => {
   const loadHistory = async () => {
     isHistoryLoading.value = true
     try {
-      const data = await essayAnalysisService.getHistory(20, 0)
-      historyItems.value = data.results || []
+      const data = await essayAnalysisService.getHistory()
+      historyItems.value = Array.isArray(data) ? data : (data?.results ?? [])
     } catch (error) {
       console.error('Failed to load essay analysis history:', error)
     } finally {
