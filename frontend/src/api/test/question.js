@@ -20,7 +20,8 @@ export const questionApi = {
     page_size = 20,
     category = null,
     tag_ids = null,
-    tag_mode = 'or'
+    tag_mode = 'or',
+    ordering = null
   } = {}) => rpc('get_questions', {
     p_subject: subject || null,
     p_difficulty: difficulty || null,
@@ -31,7 +32,8 @@ export const questionApi = {
     p_page_size: page_size,
     p_category: category || null,
     p_tag_ids: tag_ids?.length ? tag_ids : null,
-    p_tag_mode: tag_mode || 'or'
+    p_tag_mode: tag_mode || 'or',
+    p_ordering: ordering || null
   }),
 
   // get_question_detail → { id, content, explanation, type, difficulty, subject, category, year, source, options, tags }
