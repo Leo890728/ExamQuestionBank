@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import LoginModal from './components/LoginModal.vue'
+import NoteDrawer from './components/notes/NoteDrawer.vue'
 import ThemeToggle from './components/common/ThemeToggle.vue'
 import authService from './services/authService'
 import { supabase } from './lib/supabase'
@@ -17,6 +18,7 @@ const tabs = [
   { name: '練習模式', path: '/practice', key: 'practice', icon: 'bi-pencil-square' },
   { name: '討論區', path: '/discussions', key: 'discussions', icon: 'bi-chat-dots' },
   { name: '快閃卡', path: '/flashcard', key: 'flashcard', icon: 'bi-card-text' },
+  { name: '筆記', path: '/notes', key: 'notes', icon: 'bi-journal-bookmark' },
   { name: '我的考卷', path: '/user-exam', key: 'user-exam', icon: 'bi-journal-text' },
   { name: 'AI 申論解析', path: '/essay-analysis', key: 'essay-analysis', icon: 'bi-robot' },
   { name: '學習追蹤', path: '/analytics', key: 'analytics', icon: 'bi-graph-up' },
@@ -274,6 +276,9 @@ onUnmounted(() => {
 
     <!-- Login Modal -->
     <LoginModal :visible="showLoginModal" @close="handleModalClose" @success="handleLoginSuccess" />
+    
+    <!-- Note Drawer (Global) -->
+    <NoteDrawer />
   </div>
 </template>
 
