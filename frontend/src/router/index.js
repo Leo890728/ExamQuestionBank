@@ -35,6 +35,7 @@ const router = createRouter({
         { path: 'questions', component: () => import('@/components/AdminQuestionManagement.vue') },
         { path: 'tags', component: () => import('@/components/AdminTagManagement.vue') },
         { path: 'users', component: () => import('@/components/AdminUserManagement.vue') },
+        { path: 'questions-v2', component: () => import('@/components/AdminQuestionManagementV2.vue') },
         { path: 'rag', component: () => import('@/components/AdminRagManagement.vue') }
       ]
     },

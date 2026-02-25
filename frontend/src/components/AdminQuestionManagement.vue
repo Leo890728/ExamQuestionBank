@@ -14,30 +14,6 @@
     <div v-if="activeTab === 'list'" class="question-filters-wrapper">
       <QuestionFilterPanel v-model="filters" :tags="tagOptions" :loading="isLoading"
         :total-count="paginationState.totalCount" @search="applyFilters" @reset="resetFilters" />
-
-      <!-- Ordering Filter -->
-      <div class="ordering-filter">
-        <div class="filter-select-wrapper">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" class="select-icon">
-            <line x1="4" y1="21" x2="4" y2="14"></line>
-            <line x1="4" y1="10" x2="4" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12" y2="3"></line>
-            <line x1="20" y1="21" x2="20" y2="16"></line>
-            <line x1="20" y1="12" x2="20" y2="3"></line>
-            <line x1="1" y1="14" x2="7" y2="14"></line>
-            <line x1="9" y1="8" x2="15" y2="8"></line>
-            <line x1="17" y1="16" x2="23" y2="16"></line>
-          </svg>
-          <select v-model="ordering" class="filter-select" @change="applyFilters">
-            <option value="-created_at">最新建立</option>
-            <option value="created_at">最舊建立</option>
-            <option value="-updated_at">最近更新</option>
-            <option value="content">題目內容 A-Z</option>
-          </select>
-        </div>
-      </div>
     </div>
     <!-- Pending Questions List -->
     <PendingQuestionsPanel
@@ -57,7 +33,7 @@
       @open-bulk-meta="openBulkMetaModalForPending"
     />
 
-    <!-- Question List using AdminDataList -->
+    <!-- Question List using TableList -->
     <QuestionListPanel
       v-if="activeTab === 'list'"
       :questions="questions"
@@ -67,7 +43,10 @@
       :page-size="pageSize"
       :deleting-id="deletingId"
       :is-deleting="isDeleting"
+      :sort-key="sortKey"
+      :sort-order="sortOrder"
       @update:selected-ids="handleSelectionChange"
+      @sort-change="handleSortChange"
       @view="viewQuestion"
       @edit="openEditQuestion"
       @view-associated-exams="handleViewAssociatedExams"
@@ -301,7 +280,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import questionService from '@/services/questionService'
+import { questionApi } from '@/api/test/question'
 import { useQuestionDetailStore } from '@/stores/questionDetailStore'
 import { useExamStore } from '@/stores/examStore'
 import QuestionEditor from '@/components/QuestionEditor.vue'
@@ -333,7 +312,8 @@ const filters = ref({
   tag_mode: 'or'
 })
 const tagOptions = ref([])
-const ordering = ref('-created_at')
+const sortKey = ref('createdAt')
+const sortOrder = ref('desc')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const paginationState = ref({
@@ -468,46 +448,57 @@ const formatDateTime = (value) => {
   return new Intl.DateTimeFormat('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
+// Map camelCase column keys to API ordering field names
+const sortKeyToApiField = {
+  id: 'id',
+  content: 'content',
+  subject: 'subject',
+  difficulty: 'difficulty',
+  createdAt: 'created_at',
+}
+
+const ordering = computed(() => {
+  if (!sortKey.value) return '-created_at'
+  const field = sortKeyToApiField[sortKey.value] || sortKey.value
+  return sortOrder.value === 'desc' ? `-${field}` : field
+})
+
+const handleSortChange = ({ key, order }) => {
+  sortKey.value = key
+  sortOrder.value = order
+  currentPage.value = 1
+  fetchQuestions()
+}
+
 const fetchQuestions = async () => {
   isLoading.value = true
   try {
-    const params = {
+    const data = await questionApi.getQuestions({
+      subject: filters.value.subject || null,
+      difficulty: filters.value.difficulty || null,
+      type: filters.value.question_type || null,
+      keyword: filters.value.search?.trim() || null,
+      category: filters.value.category || null,
+      tag_ids: filters.value.tags?.length ? filters.value.tags.map(t => t.id) : null,
+      tag_mode: filters.value.tag_mode || 'or',
       page: currentPage.value,
-      page_size: pageSize.value
-    }
-    if (filters.value.subject) params.subject = filters.value.subject
-    if (filters.value.difficulty) params.difficulty = filters.value.difficulty
-    if (filters.value.search?.trim()) params.search = filters.value.search.trim()
-    if (ordering.value) params.ordering = ordering.value
-    if (filters.value.tags && filters.value.tags.length > 0) {
-      params.tags = filters.value.tags.map(t => t.id).join(',')
-      params.tag_mode = filters.value.tag_mode
-    }
-    const { data } = await questionService.getQuestions(params)
-    const list = Array.isArray(data) ? data : data.results || []
+      page_size: pageSize.value,
+      ordering: ordering.value || null
+    })
+    const list = data?.results || []
     questions.value = list.map(normalize)
 
-    // Update pagination state
-    if (Array.isArray(data)) {
-      paginationState.value = {
-        hasNext: false,
-        hasPrev: false,
-        totalPages: 1,
-        totalCount: data.length
-      }
-    } else {
-      const count = data.count || 0
-      const totalPages = Math.ceil(count / pageSize.value)
-      paginationState.value = {
-        hasNext: Boolean(data.next),
-        hasPrev: Boolean(data.previous) || currentPage.value > 1,
-        totalPages: totalPages || 1,
-        totalCount: count
-      }
+    const count = data?.count || 0
+    const tp = Math.ceil(count / pageSize.value) || 1
+    paginationState.value = {
+      hasNext: currentPage.value < tp,
+      hasPrev: currentPage.value > 1,
+      totalPages: tp,
+      totalCount: count
     }
   } catch (err) {
     console.error('Failed to fetch questions', err)
-    error.value = err.response?.data?.detail || '載入題目列表失敗'
+    error.value = err.message || '載入題目列表失敗'
   } finally {
     isLoading.value = false
   }
@@ -524,7 +515,8 @@ const resetFilters = () => {
     tags: [],
     tag_mode: 'or'
   }
-  ordering.value = '-created_at'
+  sortKey.value = 'createdAt'
+  sortOrder.value = 'desc'
   currentPage.value = 1
   fetchQuestions()
 }
@@ -614,7 +606,7 @@ const handleSave = async ({ questionData }) => {
   try {
     saving.value = true
     if (currentQuestion.value && currentQuestion.value.id) {
-      await questionService.updateQuestion(currentQuestion.value.id, questionData)
+      await questionApi.updateQuestion(currentQuestion.value.id, questionData)
       questionDetailStore.setQuestion({
         ...currentQuestion.value,
         ...questionData,
@@ -622,7 +614,7 @@ const handleSave = async ({ questionData }) => {
       })
       alert('題目已更新')
     } else {
-      await questionService.createQuestion(questionData)
+      await questionApi.createQuestion(questionData)
       alert('題目已建立')
     }
     closeEditor()
@@ -661,13 +653,13 @@ const handleSaveDirectlyFromEditor = async ({ questionData }) => {
       return
     }
 
-    await questionService.createQuestion(questionData)
+    await questionApi.createQuestion(questionData)
     alert('題目已建立')
     closeEditor()
     fetchQuestions()
   } catch (err) {
     console.error('Save question failed', err)
-    alert('儲存題目失敗：' + (err.response?.data?.detail || err.message || ''))
+    alert('儲存題目失敗：' + (err.message || ''))
   } finally {
     saving.value = false
   }
@@ -785,7 +777,7 @@ const deleteQuestion = async (id) => {
   if (!confirm('確定要刪除此題目嗎？')) return
   deletingId.value = id
   try {
-    await questionService.deleteQuestion(id)
+    await questionApi.deleteQuestion(id)
     // remove from selection if present
     if (selectedIds.value.includes(id)) {
       selectedIds.value = selectedIds.value.filter(x => x !== id)
@@ -834,7 +826,7 @@ const confirmDelete = async () => {
 
     for (const id of idsToDelete) {
       try {
-        await questionService.deleteQuestion(id)
+        await questionApi.deleteQuestion(id)
         successCount++
       } catch (err) {
         console.error(`Failed to delete question ${id}`, err)
@@ -1001,7 +993,7 @@ const savePendingQuestions = async () => {
       savingPendingProgress.value = i + 1
 
       try {
-        await questionService.createQuestion(questionData)
+        await questionApi.createQuestion(questionData)
         successCount++
       } catch (err) {
         console.error(`暫存題目 ${i + 1} 失敗:`, err)
@@ -1116,50 +1108,6 @@ defineExpose({
   margin-bottom: 24px;
 }
 
-.ordering-filter {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.filter-select-wrapper {
-  display: flex;
-  height: fit-content;
-  position: relative;
-  min-width: 200px;
-}
-
-.select-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary, #64748B);
-  pointer-events: none;
-}
-
-.filter-select {
-  width: 100%;
-  padding: 12px 16px 12px 44px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 14px;
-  background: #f9fafb;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px;
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: var(--primary, #476996);
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(71, 105, 150, 0.1);
-}
 
 @media (max-width: 768px) {
   .tab-switcher {
@@ -1408,11 +1356,6 @@ defineExpose({
   background: #0f172a;
   color: var(--text-primary-dark, #f1f5f9);
   box-shadow: none;
-}
-
-:root[data-theme="dark"] .filter-select,
-.dark .filter-select {
-  border-radius: 10px !important;
 }
 
 :root[data-theme="dark"] .modern-modal,

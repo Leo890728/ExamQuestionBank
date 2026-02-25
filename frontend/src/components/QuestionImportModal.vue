@@ -220,9 +220,9 @@ import { ref, computed } from 'vue'
 import PdfUploadSection from '@/components/PdfUploadSection.vue'
 import { QuestionModel } from '@/models/Question'
 
-const emit = defineEmits(['import-questions'])
+const emit = defineEmits(['import-questions', 'close', 'imported'])
 
-const showImportModal = ref(false)
+const showImportModal = ref(true)
 const importType = ref(null) // 'json' or 'pdf'
 const importStep = ref(1)
 const importPreview = ref(null)
@@ -287,6 +287,7 @@ const closeImportModal = () => {
   if (pdfUploadRef.value?.reset) {
     pdfUploadRef.value.reset()
   }
+  emit('close')
 }
 
 const selectImportType = (type) => {
@@ -427,6 +428,7 @@ const confirmImport = async () => {
     const questions = importPreview.value.questions || []
     if (questions.length > 0) {
       emit('import-questions', questions)
+      emit('imported', questions)
       alert(`已將 ${questions.length} 題加入暫存區`)
     }
     closeImportModal()
@@ -473,6 +475,7 @@ const handlePdfImportSuccess = (data) => {
     })
 
     emit('import-questions', formattedQuestions)
+    emit('imported', formattedQuestions)
     alert(`已將 PDF 匯入 ${formattedQuestions.length} 題加入暫存區`)
     closeImportModal()
   }
