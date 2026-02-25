@@ -51,10 +51,11 @@ DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oi
 -- Row Level Security
 ALTER TABLE public.exam_note ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users manage own exam notes" ON public.exam_note
-    FOR ALL TO authenticated
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'exam_note' AND policyname = 'Users manage own exam notes') THEN
+        CREATE POLICY "Users manage own exam notes" ON public.exam_note FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    END IF;
+END $$;
 
 -- Grant permissions
 GRANT ALL ON public.exam_note TO service_role;
@@ -77,15 +78,17 @@ DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oi
 -- Row Level Security
 ALTER TABLE public.exam_note_embedding ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users read own exam note embeddings" ON public.exam_note_embedding
-    FOR SELECT TO authenticated
-    USING (EXISTS (
-        SELECT 1 FROM public.exam_note
-        WHERE id = note_id AND user_id = auth.uid()
-    ));
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'exam_note_embedding' AND policyname = 'Users read own exam note embeddings') THEN
+        CREATE POLICY "Users read own exam note embeddings" ON public.exam_note_embedding FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM public.exam_note WHERE id = note_id AND user_id = auth.uid()));
+    END IF;
+END $$;
 
-CREATE POLICY "Service role manages embeddings" ON public.exam_note_embedding
-    FOR ALL TO service_role USING (true) WITH CHECK (true);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'exam_note_embedding' AND policyname = 'Service role manages embeddings') THEN
+        CREATE POLICY "Service role manages embeddings" ON public.exam_note_embedding FOR ALL TO service_role USING (true) WITH CHECK (true);
+    END IF;
+END $$;
 
 -- Grant permissions
 GRANT ALL ON public.exam_note_embedding TO service_role;
@@ -128,10 +131,11 @@ DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oi
 -- Row Level Security
 ALTER TABLE public.exam_note_flashcard ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users manage own exam note flashcards" ON public.exam_note_flashcard
-    FOR ALL TO authenticated
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'exam_note_flashcard' AND policyname = 'Users manage own exam note flashcards') THEN
+        CREATE POLICY "Users manage own exam note flashcards" ON public.exam_note_flashcard FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+    END IF;
+END $$;
 
 -- Grant permissions
 GRANT ALL ON public.exam_note_flashcard TO service_role;
@@ -141,6 +145,7 @@ GRANT ALL ON public.exam_note_flashcard TO authenticated;
 -- TRIGGER: Auto-update updated_at
 -- ============================================
 
+DROP TRIGGER IF EXISTS set_exam_note_updated_at ON public.exam_note;
 CREATE TRIGGER set_exam_note_updated_at
     BEFORE UPDATE ON public.exam_note
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();

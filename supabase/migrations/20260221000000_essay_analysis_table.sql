@@ -10,15 +10,24 @@ CREATE TABLE IF NOT EXISTS public.essay_analysis (
     created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
-CREATE INDEX idx_essay_analysis_user ON public.essay_analysis(user_id);
-CREATE INDEX idx_essay_analysis_created ON public.essay_analysis(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_essay_analysis_user ON public.essay_analysis(user_id);
+CREATE INDEX IF NOT EXISTS idx_essay_analysis_created ON public.essay_analysis(user_id, created_at DESC);
 
 ALTER TABLE public.essay_analysis ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can manage own essay analyses" ON public.essay_analysis
-    FOR ALL TO authenticated
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE tablename = 'essay_analysis' AND policyname = 'Users can manage own essay analyses'
+    ) THEN
+        CREATE POLICY "Users can manage own essay analyses" ON public.essay_analysis
+            FOR ALL TO authenticated
+            USING (auth.uid() = user_id)
+            WITH CHECK (auth.uid() = user_id);
+    END IF;
+END
+$$;
 
 GRANT ALL ON public.essay_analysis TO authenticated;
 GRANT SELECT, INSERT ON public.essay_analysis TO service_role;
