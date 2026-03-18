@@ -9,10 +9,8 @@ const authService = {
    * Login with Google OAuth
    */
   async loginWithGoogle() {
-    // Get the base path from Vite (handles /ExamQuestionBank/ subdirectory)
-    const basePath = import.meta.env.BASE_URL || '/'
     // Build the full redirect URL including base path
-    const redirectTo = `${window.location.origin}${basePath}auth/callback`
+    const redirectTo = `${window.location.origin}/auth/callback`
     console.log('OAuth redirect URL:', redirectTo)
 
     const { data, error } = await supabase.auth.signInWithOAuth({

@@ -5,14 +5,17 @@
   <meta charset="utf-8">
   <title>Redirecting...</title>
   <script>
-    // GitHub Pages SPA redirect for /ExamQuestionBank/ subdirectory
     // When a 404 occurs, redirect to index.html with the path encoded
     (function () {
       var l = window.location;
       var pathname = l.pathname;
 
-      // The base path for this GitHub Pages site
-      var basePath = '/ExamQuestionBank/';
+      if (l.hostname.endsWith("github.io")) {
+        // The base path for this GitHub Pages site
+        var basePath = '/ExamQuestionBank/';
+      } else {
+        var basePath = '/';
+      }
 
       // Extract the route after the base path
       var route = pathname;
