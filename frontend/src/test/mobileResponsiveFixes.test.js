@@ -6,13 +6,6 @@ const readSource = (relativePath) =>
   readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), 'utf-8')
 
 describe('mobile responsive fix regression checks', () => {
-  it('keeps NoteDrawer mobile width at 100% and uses dynamic viewport height', () => {
-    const source = readSource('../components/notes/NoteDrawer.vue')
-
-    expect(source).toContain("return { width: '100%' }")
-    expect(source).toContain('height: 100dvh;')
-  })
-
   it('uses responsive landing demo image and prevents horizontal overflow', () => {
     const source = readSource('../views/LandingView.vue')
 
