@@ -150,7 +150,7 @@
             
             <div class="demo-placeholder">
               <p>擴充功能示範</p>
-              <p class="demo-note"><img src="../assets/demo.png" alt="ext-demo" width="600px"></p>
+              <p class="demo-note"><img src="../assets/demo.png" alt="ext-demo" class="demo-image"></p>
             </div>
           </div>
         </div>
@@ -373,6 +373,7 @@ const handleContactSales = () => {
 <style scoped>
 .landing-view {
   width: 100%;
+  overflow-x: hidden;
   background: var(--bg-page);
   color: var(--text-primary);
 }
@@ -822,6 +823,11 @@ const handleContactSales = () => {
   font-size: 13px;
   margin-top: 6px;
   color: var(--text-secondary);
+}
+
+.demo-image {
+  width: min(100%, 600px);
+  height: auto;
 }
 
 /* Integration Section */
@@ -1367,4 +1373,3 @@ const handleContactSales = () => {
     border-color: var(--border) !important;
 }
 </style>
-
