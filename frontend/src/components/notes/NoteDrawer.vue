@@ -189,7 +189,7 @@ const isMobile = computed(() => windowWidth.value < 768)
 
 const drawerStyle = computed(() => {
   if (isMobile.value) {
-    return { width: '100vw' }
+    return { width: '100%' }
   }
   return { width: `${width.value}px` }
 })
@@ -356,8 +356,9 @@ function formatDate(isoString) {
   pointer-events: none; /* Allow clicking through container */
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
 }
 
 .drawer-backdrop {
@@ -375,7 +376,8 @@ function formatDate(isoString) {
   pointer-events: auto;
   position: absolute;
   top: 0;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
   background: white;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
