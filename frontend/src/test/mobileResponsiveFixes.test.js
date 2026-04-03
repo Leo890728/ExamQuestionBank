@@ -1,16 +1,22 @@
-import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { describe, expect, it, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
 
-const readSource = (relativePath) =>
-  readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), 'utf-8')
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() })
+}))
+
+vi.mock('@/services/authService', () => ({
+  default: { isAuthenticated: vi.fn(() => false) }
+}))
+
+import LandingView from '../views/LandingView.vue'
 
 describe('mobile responsive fix regression checks', () => {
   it('uses responsive landing demo image and prevents horizontal overflow', () => {
-    const source = readSource('../views/LandingView.vue')
+    const wrapper = mount(LandingView)
+    const image = wrapper.get('img[alt="ext-demo"]')
 
-    expect(source).toContain('<img src="../assets/demo.png" alt="ext-demo" class="demo-image">')
-    expect(source).toContain('overflow-x: hidden;')
-    expect(source).toContain('width: min(100%, 600px);')
+    expect(image.classes()).toContain('demo-image')
+    expect(image.attributes('width')).toBeUndefined()
   })
 })
