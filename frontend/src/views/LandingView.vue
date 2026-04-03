@@ -150,7 +150,7 @@
             
             <div class="demo-placeholder">
               <p>擴充功能示範</p>
-              <p class="demo-note"><img src="../assets/demo.png" alt="ext-demo" width="600px"></p>
+              <p class="demo-note"><img src="../assets/demo.png" alt="ext-demo" style="width: 100%; max-width: 600px; height: auto;"></p>
             </div>
           </div>
         </div>
@@ -373,6 +373,8 @@ const handleContactSales = () => {
 <style scoped>
 .landing-view {
   width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   background: var(--bg-page);
   color: var(--text-primary);
 }
@@ -766,6 +768,7 @@ const handleContactSales = () => {
   justify-content: center;
   border: 1px solid var(--border);
   position: relative;
+  overflow: hidden;
 }
 
 /* Floating notification card */
