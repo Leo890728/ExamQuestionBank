@@ -3,6 +3,40 @@ import { ref, computed } from 'vue'
 import aiService from '@/services/aiService'
 
 export const useChatStore = defineStore('chat', () => {
+  const sortMessagesByCreatedAt = (items = []) => {
+    return [...items].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  }
+
+  const normalizeHistoryItems = (conversations = []) => {
+    return conversations.map((conversation) => {
+      const orderedMessages = sortMessagesByCreatedAt(conversation.conversation_message || [])
+      const userMessages = orderedMessages.filter((item) => item.role === 'user')
+      const assistantMessages = orderedMessages.filter((item) => item.role === 'assistant')
+      const latestUserMessage = userMessages[userMessages.length - 1] || null
+      const latestAssistantMessage = assistantMessages[assistantMessages.length - 1] || null
+
+      return {
+        id: conversation.id,
+        conversation_id: conversation.id,
+        title: conversation.title,
+        created_at: latestAssistantMessage?.created_at || latestUserMessage?.created_at || conversation.updated_at || conversation.created_at,
+        message: latestUserMessage?.content || '',
+        response: latestAssistantMessage?.content || '',
+        conversation_message: orderedMessages
+      }
+    })
+  }
+
+  const normalizeChatMessages = (conversations = []) => {
+    return [...conversations]
+      .reverse()
+      .flatMap((conversation) => sortMessagesByCreatedAt(conversation.conversation_message || []).map((item) => ({
+        role: item.role,
+        content: item.content,
+        timestamp: new Date(item.created_at)
+      })))
+  }
+
   // State
   const messages = ref([])
   const historyItems = ref([])
@@ -33,7 +67,7 @@ export const useChatStore = defineStore('chat', () => {
       const response = await aiService.sendMessage(userMessage.trim())
       messages.value.push({
         role: 'assistant',
-        content: response.response,
+        content: response.content || '',
         timestamp: new Date()
       })
 
@@ -54,16 +88,12 @@ export const useChatStore = defineStore('chat', () => {
     isHistoryLoading.value = true
     try {
       const data = await aiService.getHistory(20, 0)
-      historyItems.value = data.results || []
+      const conversations = Array.isArray(data) ? data : []
+      historyItems.value = normalizeHistoryItems(conversations)
 
       // Only update messages if we haven't had any conversation yet in this session
       if (!isInitialized.value) {
-        // Reverse the history so oldest messages appear at top (normal chat order)
-        const reversedHistory = [...historyItems.value].reverse()
-        messages.value = reversedHistory.flatMap(item => ([
-          { role: 'user', content: item.message, timestamp: new Date(item.created_at) },
-          { role: 'assistant', content: item.response, timestamp: new Date(item.created_at) }
-        ]))
+        messages.value = normalizeChatMessages(conversations)
         isInitialized.value = true
       }
     } catch (error) {
