@@ -243,7 +243,7 @@
       </div>
     </section>
 
-    <!-- Stats Section -->
+    <!-- Stats Section 
     <section class="stats-section">
       <div class="container">
         <div class="stats-grid">
@@ -278,7 +278,7 @@
         </div>
       </div>
     </section>
-
+-->
     <!-- Footer Section -->
     <footer class="site-footer">
       <div class="container">
