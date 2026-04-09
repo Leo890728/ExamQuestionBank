@@ -102,7 +102,7 @@
                         <!-- Custom item actions for practice mode -->
                         <template #item-actions="{ item }">
                             <button class="btn btn-sm" @click="startSingleQuizFromSearch(item)">練習</button>
-                            <button class="btn btn-sm btn-outline" @click="openChatFromSearchQuestion(item)">Ask
+                            <button class="btn btn-sm btn-outline" @click="startAskAiFromSearch(item)">Ask
                                 AI</button>
                         </template>
                     </QuestionList>
@@ -123,7 +123,7 @@
                                 <i :class="isFlagged(currentQuestion?.id) ? 'bi bi-flag-fill' : 'bi bi-flag'"></i>
                             </button>
                             <button v-if="showAnswer" class="btn btn-ghost"
-                                @click="openChat(composeQuestionPrompt(currentQuestion, currentOptions))">Ask
+                                @click="startAskAiFromQuestion(currentQuestion, currentOptions)">Ask
                                 AI</button>
                             <button class="btn btn-secondary" @click="exitQuiz">結束練習</button>
                         </div>
@@ -250,7 +250,7 @@
                                 {{ item.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
                             </button>
                             <button class="btn btn-sm btn-secondary" @click="markReviewed(item.id)">已複習</button>
-                            <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(item)">Ask AI</button>
+                            <button class="btn btn-sm btn-outline" @click="startAskAiFromQuestion(item)">Ask AI</button>
                         </template>
                     </QuestionList>
                 </section>
@@ -305,7 +305,7 @@
                                 {{ item.is_in_flashcard ? '移除快閃卡' : '加入快閃卡' }}
                             </button>
                             <button class="btn btn-sm btn-danger" @click="removeBookmark(item.question)">移除</button>
-                            <button class="btn btn-sm btn-outline" @click="openChatFromQuestion(item)">Ask AI</button>
+                            <button class="btn btn-sm btn-outline" @click="startAskAiFromQuestion(item)">Ask AI</button>
                         </template>
                     </QuestionList>
                 </section>
@@ -657,7 +657,7 @@ const handleWrongItemAction = (action, item) => {
     if (action === 'practice') {
         startSingleQuiz(item)
     } else if (action === 'ask-ai') {
-        openChatFromQuestion(item)
+        startAskAiFromQuestion(item)
     } else if (action === 'flashcard') {
         toggleFlashcard(item)
     }
@@ -668,7 +668,7 @@ const handleBookmarkItemAction = (action, item) => {
     if (action === 'practice') {
         startSingleQuiz(item)
     } else if (action === 'ask-ai') {
-        openChatFromQuestion(item)
+        startAskAiFromQuestion(item)
     } else if (action === 'flashcard') {
         toggleFlashcard(item)
     }
@@ -727,6 +727,51 @@ const batchRemoveBookmarks = async (selectedIds) => {
 }
 
 const getLabel = (order) => String.fromCharCode(64 + (order || 1))
+
+const buildPracticeAskAiPrompt = (question, options = []) => {
+    if (!question) return ''
+
+    const content = question.content || question.question_content || ''
+    const normalizedOptions = Array.isArray(options) ? options : []
+    const optionsText = normalizedOptions
+        .map((option, index) => `${getLabel(index + 1)}. ${option.content}`)
+        .join('\n')
+
+    const correctOption = normalizedOptions.find((option) => option.is_correct)
+    const correctIndex = correctOption ? normalizedOptions.indexOf(correctOption) : -1
+    const correctAnswer = correctOption
+        ? `\n\n正確答案：${getLabel(correctIndex + 1)}. ${correctOption.content}`
+        : ''
+
+    if (!optionsText) {
+        return `題目：${content}\n\n請幫我解析這題，說明考點、作答思路，並提醒容易誤選的地方。`
+    }
+
+    return `題目：${content}\n\n選項：\n${optionsText}${correctAnswer}\n\n請幫我解析這題，說明為什麼正確答案是這個，並比較其他選項為什麼不對。`
+}
+
+const startAskAiFromQuestion = async (question, existingOptions = null) => {
+    if (!question) return
+
+    const questionId = question.question || question.id
+    const immediatePrompt = buildPracticeAskAiPrompt(question, existingOptions || [])
+    if (immediatePrompt) {
+        openChat(immediatePrompt)
+    }
+
+    if (existingOptions?.length || !questionId) return
+
+    try {
+        const res = await questionService.getQuestionOptions(questionId)
+        openChat(buildPracticeAskAiPrompt(question, res.data || []))
+    } catch (e) {
+        console.error('Failed to load question options for AI:', e)
+    }
+}
+
+const startAskAiFromSearch = async (question) => {
+    await startAskAiFromQuestion(question)
+}
 
 const loadData = async () => {
     loadingExams.value = true
@@ -869,7 +914,7 @@ const handleQuestionItemAction = (action, item) => {
     if (action === 'practice') {
         startSingleQuizFromSearch(item)
     } else if (action === 'ask-ai') {
-        openChatFromSearchQuestion(item)
+        startAskAiFromSearch(item)
     } else if (action === 'flashcard') {
         addToFlashcard(item.id)
         // Refresh search results to update flashcard status

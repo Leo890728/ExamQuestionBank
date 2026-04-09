@@ -29,7 +29,7 @@
           </div>
         </div>
         <div class="quiz-tools">
-          <button v-if="showAnswer" class="btn btn-ghost" @click="openAIChat" title="Ask AI">
+          <button v-if="showAnswer" class="btn btn-ghost" @click="openPracticeAiChat" title="Ask AI">
             <i class="bi bi-robot"></i> Ask AI
           </button>
           <button class="btn btn-secondary" @click="confirmExit">結束練習</button>
@@ -310,6 +310,34 @@ const currentInFlashcard = computed(() => {
 
 // Methods
 const getOptionLabel = (idx) => String.fromCharCode(65 + idx) // A, B, C, D...
+
+const buildPracticeAskAiPrompt = (question, options = []) => {
+  if (!question) return ''
+
+  const content = question.content || question.question_content || ''
+  const normalizedOptions = Array.isArray(options) ? options : []
+  const optionsText = normalizedOptions
+    .map((option, index) => `${getOptionLabel(index)}. ${option.content}`)
+    .join('\n')
+
+  const correctOption = normalizedOptions.find((option) => option.is_correct)
+  const correctIndex = correctOption ? normalizedOptions.indexOf(correctOption) : -1
+  const correctAnswer = correctOption
+    ? `\n\n正確答案：${getOptionLabel(correctIndex)}. ${correctOption.content}`
+    : ''
+
+  if (!optionsText) {
+    return `題目：${content}\n\n請幫我解析這題，說明考點、作答思路，並提醒容易誤選的地方。`
+  }
+
+  return `題目：${content}\n\n選項：\n${optionsText}${correctAnswer}\n\n請幫我解析這題，說明為什麼正確答案是這個，並比較其他選項為什麼不對。`
+}
+
+const openPracticeAiChat = () => {
+  const prefillText = buildPracticeAskAiPrompt(currentQuestion.value, currentOptions.value)
+  chatPrefill.value = { text: prefillText, stamp: Date.now() }
+  isChatOpen.value = true
+}
 
 const getDifficultyLabel = (difficulty) => {
   const labels = { easy: '簡單', medium: '中等', hard: '困難' }
@@ -634,7 +662,7 @@ const stopFloatingDrag = () => {
 
   // If not dragged, treat as click
   if (!hasDragged.value) {
-    openAIChat()
+    openPracticeAiChat()
     return
   }
 

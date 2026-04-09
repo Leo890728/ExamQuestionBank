@@ -109,7 +109,7 @@ const props = defineProps({
 const { messages, historyItems, isLoading, isHistoryLoading, errorMessage } = storeToRefs(chatStore)
 
 // Local state
-const inputMessage = ref('')
+const inputMessage = ref(props.prefill?.text || '')
 const messagesContainer = ref(null)
 const chatInputRef = ref(null)
 // Use local state for internal tabs to avoid conflict with parent page's tab query
@@ -117,6 +117,24 @@ const currentTab = ref('chat')
 
 const setTab = (tab) => {
   currentTab.value = tab
+}
+
+const applyPrefill = () => {
+  if (!props.prefill) return
+
+  inputMessage.value = props.prefill.text || ''
+  setTab('chat')
+
+  const shouldFocus = Boolean(props.prefill.text) || Number(props.prefill.stamp || 0) > 0
+  if (!shouldFocus) return
+
+  nextTick(() => {
+    if (chatInputRef.value) {
+      const length = inputMessage.value.length
+      chatInputRef.value.focus()
+      chatInputRef.value.setSelectionRange(length, length)
+    }
+  })
 }
 
 watch(messages, () => {
@@ -134,18 +152,7 @@ watch(currentTab, (newTab) => {
   }
 })
 
-watch(() => props.prefill?.stamp, () => {
-  if (!props.prefill) return
-  inputMessage.value = props.prefill.text || ''
-  setTab('chat')
-  nextTick(() => {
-    if (chatInputRef.value) {
-      const length = inputMessage.value.length
-      chatInputRef.value.focus()
-      chatInputRef.value.setSelectionRange(length, length)
-    }
-  })
-})
+watch(() => [props.prefill?.stamp, props.prefill?.text], applyPrefill, { immediate: true })
 
 const scrollToBottom = () => {
   if (messagesContainer.value) {
