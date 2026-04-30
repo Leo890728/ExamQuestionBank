@@ -91,19 +91,30 @@ const handleLogout = async () => {
     } else {
       authService.logout()
     }
+    // Clear state immediately — don't wait for the async onAuthStateChange listener
     supabaseUser.value = null
-    loginStateVersion.value++ // 觸發響應式更新
+    localStorage.removeItem('user_id')
+    localStorage.removeItem('username')
+    localStorage.removeItem('user_role')
+    loginStateVersion.value++
     router.push('/')
   }
 }
 
-const handleLoginSuccess = () => {
+const handleLoginSuccess = async () => {
   console.log('處理登入成功事件')
 
   // 關閉登入彈窗
   showLoginModal.value = false
 
-  // 觸發響應式更新
+  // Eagerly fetch the current session so the UI updates immediately,
+  // rather than waiting for the async onAuthStateChange listener.
+  if (USE_SUPABASE) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      supabaseUser.value = session.user
+    }
+  }
   loginStateVersion.value++
   console.log('已更新登入狀態，currentUser:', currentUser.value)
 
@@ -128,38 +139,40 @@ const handleModalClose = () => {
 // Auth state subscription
 let authSubscription = null
 
+const applySupabaseSession = (session) => {
+  supabaseUser.value = session?.user || null
+  loginStateVersion.value++
+
+  if (session?.user) {
+    localStorage.setItem('user_id', session.user.id)
+    localStorage.setItem('username', session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User')
+    localStorage.setItem('user_role', session.user.user_metadata?.is_admin ? 'admin' : 'user')
+  } else {
+    localStorage.removeItem('user_id')
+    localStorage.removeItem('username')
+    localStorage.removeItem('user_role')
+  }
+}
+
 // 掛載時註冊全域事件監聽器
-onMounted(async () => {
+onMounted(() => {
   // 註冊全域事件監聽器
   window.addEventListener('show-login', showLogin)
-  
-  // Subscribe to Supabase auth state changes
+
   if (USE_SUPABASE) {
-    // Get initial session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      supabaseUser.value = session.user
-      console.log('Initial Supabase user:', session.user.email, 'isAdmin:', session.user.user_metadata?.is_admin)
-    }
-    
-    // Listen for auth changes
+    // Subscribe FIRST so no auth events are missed during initial getSession
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session?.user?.email)
-      supabaseUser.value = session?.user || null
-      loginStateVersion.value++
-      
-      // Update localStorage for compatibility
-      if (session?.user) {
-        localStorage.setItem('user_id', session.user.id)
-        localStorage.setItem('username', session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User')
-        localStorage.setItem('user_role', session.user.user_metadata?.is_admin ? 'admin' : 'user')
-      } else {
-        localStorage.removeItem('user_id')
-        localStorage.removeItem('username')
-        localStorage.removeItem('user_role')
-      }
+      applySupabaseSession(session)
     })
     authSubscription = subscription
+
+    // Then load any existing session (won't miss events thanks to the listener above)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        applySupabaseSession(session)
+      }
+    })
   }
 })
 

@@ -72,10 +72,19 @@ onMounted(async () => {
     let session = null
 
     if (code) {
-      // PKCE flow (default in supabase-js v2)
+      // PKCE flow (default in supabase-js v2). The supabase client may have
+      // already auto-exchanged the code via detectSessionInUrl, in which case
+      // a manual exchange will fail because PKCE codes are single-use. Fall
+      // back to getSession() in that case.
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-      if (error) throw error
-      session = data.session
+      if (error) {
+        console.warn('Manual code exchange failed, falling back to getSession:', error.message)
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) throw sessionError
+        session = sessionData.session
+      } else {
+        session = data.session
+      }
     } else if (window.location.hash) {
       // Implicit flow fallback (older providers)
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
