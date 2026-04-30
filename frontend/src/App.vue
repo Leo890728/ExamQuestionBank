@@ -4,14 +4,10 @@ import { useRouter, useRoute } from 'vue-router'
 import LoginModal from './components/LoginModal.vue'
 import NoteDrawer from './components/notes/NoteDrawer.vue'
 import ThemeToggle from './components/common/ThemeToggle.vue'
-import authService from './services/authService'
 import { supabase } from './lib/supabase'
 
 const router = useRouter()
 const route = useRoute()
-
-// Check if using Supabase
-const USE_SUPABASE = import.meta.env.VITE_USE_SUPABASE === 'true'
 
 const tabs = [
   { name: '首頁', path: '/', key: 'landing', icon: 'bi-house-door' },
@@ -38,28 +34,22 @@ const supabaseUser = ref(null)
 // 檢查是否已登入
 const isAuthenticated = computed(() => {
   loginStateVersion.value // 依賴此值來觸發重新計算
-  if (USE_SUPABASE) {
-    return !!supabaseUser.value
-  }
-  return authService.isAuthenticated()
+  return !!supabaseUser.value
 })
 
 // 取得當前使用者（computed 會自動響應變化）
 const currentUser = computed(() => {
   loginStateVersion.value // 依賴此值來觸發重新計算
-  
-  if (USE_SUPABASE && supabaseUser.value) {
-    const user = supabaseUser.value
-    return {
-      id: user.id,
-      username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-      email: user.email,
-      isAdmin: user.user_metadata?.is_admin || false,
-      role: user.user_metadata?.is_admin ? 'admin' : 'user'
-    }
+
+  if (!supabaseUser.value) return null
+  const user = supabaseUser.value
+  return {
+    id: user.id,
+    username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+    email: user.email,
+    isAdmin: user.user_metadata?.is_admin || false,
+    role: user.user_metadata?.is_admin ? 'admin' : 'user'
   }
-  
-  return authService.getCurrentUser()
 })
 
 // 根據使用者角色篩選可見的 tabs
@@ -86,11 +76,7 @@ const handleLogin = () => {
 
 const handleLogout = async () => {
   if (confirm('確定要登出嗎？')) {
-    if (USE_SUPABASE) {
-      await supabase.auth.signOut()
-    } else {
-      authService.logout()
-    }
+    await supabase.auth.signOut()
     // Clear state immediately — don't wait for the async onAuthStateChange listener
     supabaseUser.value = null
     localStorage.removeItem('user_id')
@@ -109,11 +95,9 @@ const handleLoginSuccess = async () => {
 
   // Eagerly fetch the current session so the UI updates immediately,
   // rather than waiting for the async onAuthStateChange listener.
-  if (USE_SUPABASE) {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      supabaseUser.value = session.user
-    }
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) {
+    supabaseUser.value = session.user
   }
   loginStateVersion.value++
   console.log('已更新登入狀態，currentUser:', currentUser.value)
@@ -159,21 +143,19 @@ onMounted(() => {
   // 註冊全域事件監聽器
   window.addEventListener('show-login', showLogin)
 
-  if (USE_SUPABASE) {
-    // Subscribe FIRST so no auth events are missed during initial getSession
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email)
-      applySupabaseSession(session)
-    })
-    authSubscription = subscription
+  // Subscribe FIRST so no auth events are missed during initial getSession
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state changed:', event, session?.user?.email)
+    applySupabaseSession(session)
+  })
+  authSubscription = subscription
 
-    // Then load any existing session (won't miss events thanks to the listener above)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        applySupabaseSession(session)
-      }
-    })
-  }
+  // Then load any existing session (won't miss events thanks to the listener above)
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user) {
+      applySupabaseSession(session)
+    }
+  })
 })
 
 // Cleanup on unmount
